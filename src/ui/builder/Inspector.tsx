@@ -756,16 +756,33 @@ export function Inspector() {
                         </Select>
                       </div>
                     </Field>
-                    <Field label="Object Fit">
+                    <Field label="התאמת תמונה (Object Fit)">
                       <Select
                         value={selectedWidget.type === 'image' ? (selectedWidget.objectFit ?? 'cover') : 'cover'}
                         onChange={(e) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'image') w.objectFit = e.target.value as any })}
                       >
-                        <option value="cover">Cover</option>
-                        <option value="contain">Contain</option>
+                        <option value="cover">כיסוי</option>
+                        <option value="contain">התאמה</option>
                       </Select>
                     </Field>
                   </div>
+                  <Field label="גובה תמונה (px)">
+                    <NumberInputUI
+                      className="w-20 h-8"
+                      value={(() => {
+                        const h = selectedWidget.type === 'image' ? (selectedWidget.height as any) : undefined
+                        if (typeof h === 'number') return h as any
+                        if (typeof h === 'string') return Number(String(h).replace(/[^0-9.-]/g,'')) as any
+                        return '' as any
+                      })()}
+                      onChange={(e) => {
+                        const raw = (e.target as HTMLInputElement).value
+                        const num = raw === '' ? undefined : Number(raw)
+                        updateWidget(selectedWidget.id, (w) => { if (w.type === 'image') w.height = num === undefined ? undefined : `${num}px` })
+                      }}
+                    />
+                    <div className="text-[11px] text-zinc-500 mt-1">גובה יעבוד יחד עם "התאמת תמונה" (Cover/Contain)</div>
+                  </Field>
                   <Field label="עיגול פינות (px)">
                     <NumberInputUI
                       className="w-20 h-8"

@@ -295,8 +295,8 @@ export function WidgetRenderer({ widget, sectionId, index, draggable = true }: {
               src={imgSrc}
               alt={w.alt ?? ''}
               loading={w.lazy ? 'lazy' : undefined}
-              className="w-full h-auto block"
-              style={{ objectFit: w.objectFit ?? 'cover', borderRadius: effectiveHoverStyle.borderRadius as any, opacity: assetLoaded ? 1 : 0, transition: 'opacity 200ms' }}
+              className="w-full block"
+              style={{ height: (w as any).height ? (w as any).height : 'auto', objectFit: w.objectFit ?? 'cover', borderRadius: effectiveHoverStyle.borderRadius as any, opacity: assetLoaded ? 1 : 0, transition: 'opacity 200ms' }}
               onLoad={() => { setAssetLoaded(true); setAssetProgress(100) }}
               onError={() => { setAssetLoaded(true); setAssetProgress(100) }}
             />
