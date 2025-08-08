@@ -555,7 +555,7 @@ export function Inspector() {
                     className="min-h-[112px] rounded-md border px-3 py-2 text-sm bg-white/80 dark:bg-zinc-900/80 focus:outline-none"
                     contentEditable
                     suppressContentEditableWarning
-                    dir="rtl"
+                    dir="auto"
                     ref={textEditorRef}
                     onInput={(e) => { updateWidget(selectedWidget.id, (w) => { if (w.type === 'text') w.content = (e.currentTarget as HTMLDivElement).innerHTML }); updateTextToolbarState() }}
                     onPaste={(e) => {

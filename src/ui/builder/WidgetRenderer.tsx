@@ -215,7 +215,7 @@ export function WidgetRenderer({ widget, sectionId, index, draggable = true }: {
                 contentEditable
                 suppressContentEditableWarning
                 className="outline-none border border-zinc-300 rounded px-1"
-                dir="rtl"
+                dir="auto"
                 style={contentTypographyStyle}
                 onInput={(e) => {
                   const value = (e.currentTarget as HTMLDivElement).innerText
@@ -244,7 +244,7 @@ export function WidgetRenderer({ widget, sectionId, index, draggable = true }: {
             contentEditable
             suppressContentEditableWarning
             className="outline-none border border-zinc-300 rounded px-1 leading-7"
-            dir="rtl"
+            dir="auto"
             style={contentTypographyStyle}
             onInput={(e) => {
               const value = (e.currentTarget as HTMLDivElement).innerHTML
