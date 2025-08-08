@@ -61,6 +61,24 @@ export function Inspector() {
   const [mediaModal, setMediaModal] = useState<null | { kind: 'image' | 'video'; widgetId: string }>(null)
   const [assets, setAssets] = useState<Array<{ kind: 'image' | 'video'; url: string }>>([])
   const textEditorRef = useRef<HTMLDivElement | null>(null)
+  const [textFmt, setTextFmt] = useState<{ bold: boolean; italic: boolean; underline: boolean; align: 'left' | 'center' | 'right'; list: boolean }>({ bold: false, italic: false, underline: false, align: 'right', list: false })
+
+  const updateTextToolbarState = () => {
+    const sel = document.getSelection()
+    const root = textEditorRef.current
+    if (!sel || !root) return
+    const within = !!sel.anchorNode && root.contains(sel.anchorNode)
+    if (!within) return
+    try {
+      const bold = document.queryCommandState('bold')
+      const italic = document.queryCommandState('italic')
+      const underline = document.queryCommandState('underline')
+      const center = document.queryCommandState('justifyCenter')
+      const right = document.queryCommandState('justifyRight')
+      const list = document.queryCommandState('insertUnorderedList')
+      setTextFmt({ bold, italic, underline, align: center ? 'center' : right ? 'right' : 'left', list })
+    } catch {}
+  }
   // כאשר נבחר אלמנט חדש, חזור ללשונית "כללי" לפתיחת ההגדרות
   useMemo(() => {
     // טריק זעיר: שינוי selected יפעיל את ה-hook
@@ -523,15 +541,15 @@ export function Inspector() {
               children: (
                 <div className="space-y-2">
                   <div className="flex items-center gap-1 border rounded p-1 bg-white">
-                    <button className="px-2 py-1 hover:bg-zinc-100 rounded" title="מודגש" onMouseDown={(e) => { e.preventDefault(); textEditorRef.current && textEditorRef.current.focus(); document.execCommand('bold') }}><Bold size={14} /></button>
-                    <button className="px-2 py-1 hover:bg-zinc-100 rounded" title="נטוי" onMouseDown={(e) => { e.preventDefault(); textEditorRef.current && textEditorRef.current.focus(); document.execCommand('italic') }}><Italic size={14} /></button>
-                    <button className="px-2 py-1 hover:bg-zinc-100 rounded" title="קו תחתון" onMouseDown={(e) => { e.preventDefault(); textEditorRef.current && textEditorRef.current.focus(); document.execCommand('underline') }}><Underline size={14} /></button>
+                    <button className={`px-2 py-1 rounded ${textFmt.bold ? 'bg-zinc-200' : 'hover:bg-zinc-100'}`} title="מודגש" onMouseDown={(e) => { e.preventDefault(); textEditorRef.current && textEditorRef.current.focus(); document.execCommand('bold'); setTimeout(updateTextToolbarState, 0) }}><Bold size={14} /></button>
+                    <button className={`px-2 py-1 rounded ${textFmt.italic ? 'bg-zinc-200' : 'hover:bg-zinc-100'}`} title="נטוי" onMouseDown={(e) => { e.preventDefault(); textEditorRef.current && textEditorRef.current.focus(); document.execCommand('italic'); setTimeout(updateTextToolbarState, 0) }}><Italic size={14} /></button>
+                    <button className={`px-2 py-1 rounded ${textFmt.underline ? 'bg-zinc-200' : 'hover:bg-zinc-100'}`} title="קו תחתון" onMouseDown={(e) => { e.preventDefault(); textEditorRef.current && textEditorRef.current.focus(); document.execCommand('underline'); setTimeout(updateTextToolbarState, 0) }}><Underline size={14} /></button>
                     <div className="w-px h-5 bg-zinc-200 mx-1" />
-                    <button className="px-2 py-1 hover:bg-zinc-100 rounded" title="יישור ימין" onMouseDown={(e) => { e.preventDefault(); textEditorRef.current && textEditorRef.current.focus(); document.execCommand('justifyRight') }}><AlignRight size={14} /></button>
-                    <button className="px-2 py-1 hover:bg-zinc-100 rounded" title="יישור מרכז" onMouseDown={(e) => { e.preventDefault(); textEditorRef.current && textEditorRef.current.focus(); document.execCommand('justifyCenter') }}><AlignCenter size={14} /></button>
-                    <button className="px-2 py-1 hover:bg-zinc-100 rounded" title="יישור שמאל" onMouseDown={(e) => { e.preventDefault(); textEditorRef.current && textEditorRef.current.focus(); document.execCommand('justifyLeft') }}><AlignLeft size={14} /></button>
+                    <button className={`px-2 py-1 rounded ${textFmt.align === 'right' ? 'bg-zinc-200' : 'hover:bg-zinc-100'}`} title="יישור ימין" onMouseDown={(e) => { e.preventDefault(); textEditorRef.current && textEditorRef.current.focus(); document.execCommand('justifyRight'); setTimeout(updateTextToolbarState, 0) }}><AlignRight size={14} /></button>
+                    <button className={`px-2 py-1 rounded ${textFmt.align === 'center' ? 'bg-zinc-200' : 'hover:bg-zinc-100'}`} title="יישור מרכז" onMouseDown={(e) => { e.preventDefault(); textEditorRef.current && textEditorRef.current.focus(); document.execCommand('justifyCenter'); setTimeout(updateTextToolbarState, 0) }}><AlignCenter size={14} /></button>
+                    <button className={`px-2 py-1 rounded ${textFmt.align === 'left' ? 'bg-zinc-200' : 'hover:bg-zinc-100'}`} title="יישור שמאל" onMouseDown={(e) => { e.preventDefault(); textEditorRef.current && textEditorRef.current.focus(); document.execCommand('justifyLeft'); setTimeout(updateTextToolbarState, 0) }}><AlignLeft size={14} /></button>
                     <div className="w-px h-5 bg-zinc-200 mx-1" />
-                    <button className="px-2 py-1 hover:bg-zinc-100 rounded" title="רשימה" onMouseDown={(e) => { e.preventDefault(); textEditorRef.current && textEditorRef.current.focus(); document.execCommand('insertUnorderedList') }}><List size={14} /></button>
+                    <button className={`px-2 py-1 rounded ${textFmt.list ? 'bg-zinc-200' : 'hover:bg-zinc-100'}`} title="רשימה" onMouseDown={(e) => { e.preventDefault(); textEditorRef.current && textEditorRef.current.focus(); document.execCommand('insertUnorderedList'); setTimeout(updateTextToolbarState, 0) }}><List size={14} /></button>
                   </div>
                   <div
                     className="min-h-[112px] rounded-md border px-3 py-2 text-sm bg-white/80 dark:bg-zinc-900/80 focus:outline-none"
@@ -539,7 +557,9 @@ export function Inspector() {
                     suppressContentEditableWarning
                     dir="rtl"
                     ref={textEditorRef}
-                    onInput={(e) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'text') w.content = (e.currentTarget as HTMLDivElement).innerHTML })}
+                    onInput={(e) => { updateWidget(selectedWidget.id, (w) => { if (w.type === 'text') w.content = (e.currentTarget as HTMLDivElement).innerHTML }); updateTextToolbarState() }}
+                    onKeyUp={() => updateTextToolbarState()}
+                    onMouseUp={() => updateTextToolbarState()}
                     dangerouslySetInnerHTML={{ __html: selectedWidget.type === 'text' ? (selectedWidget.content ?? '') : '' }}
                   />
                   <div className="text-[11px] text-zinc-500">אפשר לערוך: מודגש, נטוי, קו תחתון, רשימה, יישור, ירידת שורה (Enter)</div>
