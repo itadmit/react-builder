@@ -412,7 +412,7 @@ export function WidgetRenderer({ widget, sectionId, index, draggable = true }: {
         </div>
       )}
       {widget.type === 'banner' && (
-        <div className="rounded overflow-hidden relative">
+        <div className="overflow-hidden relative" style={{ borderRadius: (effectiveHoverStyle.borderRadius as any) }}>
           {(() => { const b = widget as Extract<Widget, { type: 'banner' }>; return (
             <>
               {!assetLoaded && (

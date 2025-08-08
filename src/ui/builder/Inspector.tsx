@@ -766,6 +766,18 @@ export function Inspector() {
                       </Select>
                     </Field>
                   </div>
+                  <Field label="עיגול פינות (px)">
+                    <NumberInputUI
+                      className="w-20 h-8"
+                      value={selectedWidget.style?.borderRadius as any}
+                      onChange={(e) => {
+                        const val = (e.target as HTMLInputElement).value
+                        updateWidget(selectedWidget.id, (w) => {
+                          if (w.type === 'image') w.style = { ...(w.style ?? {}), borderRadius: val === '' ? undefined : Number(val) }
+                        })
+                      }}
+                    />
+                  </Field>
                 </div>
               ),
             },
