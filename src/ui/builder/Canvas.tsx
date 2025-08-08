@@ -5,7 +5,7 @@ import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-
 import { CSS } from '@dnd-kit/utilities'
 import { useMemo, useState } from 'react'
 import { MousePointerSquareDashed } from 'lucide-react'
-import type { StyleValues } from '@/types/builder'
+import type { StyleValues, Section as SectionType, DeviceBreakpoint, SelectedTarget } from '@/types/builder'
 
 export function Canvas() {
   const page = useBuilderStore((s) => s.page)
@@ -144,96 +144,21 @@ export function Canvas() {
         ) : (
         <DndContext onDragEnd={onDragEnd}>
           <SortableContext items={page.sections.map((s) => `section:${s.id}`)} strategy={verticalListSortingStrategy}>
-          {page.sections.map((section) => (
-            (section.advanced?.hiddenOn?.[device] ? null : (
-            (() => {
-              const sortable = useSortable({ id: `section:${section.id}` })
-              const transform = CSS.Transform.toString(sortable.transform)
-              const transition = sortable.transition
-              return (
-            <section
-              key={section.id}
-              className={`card group relative border border-transparent group-hover:border-zinc-200 ${section.widgets.length === 0 ? 'border-0' : ''} ${selected?.kind === 'section' && selected.id === section.id ? 'ring-1 ring-[var(--qs-outline-strong)]' : ''}`}
-              ref={sortable.setNodeRef}
-              style={{ ...styleToCss(mergeStyles(section.style, section.responsiveStyle?.[device])), marginLeft: 'auto', marginRight: 'auto', transform, transition }}
-              id={section.advanced?.anchorId}
-          onClick={() => select({ kind: 'section', id: section.id })}
-            >
-              <style>{section.advanced?.customCss ?? ''}</style>
-              <div className="absolute top-1 left-1 z-20 text-xs text-zinc-500 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition pointer-events-auto">
-                <span className="chip cursor-pointer select-none" onClick={(e) => { e.stopPropagation(); select({ kind: 'section', id: section.id }) }}>שורה</span>
-                {/* ניתן לחבר למחיקה/שכפול מקטע בהמשך */}
-              </div>
-              <div className="e-pill hoverable section-pill" style={{ top: -26, transform: 'translateX(-65%)' }}>
-                <button className="ghost" title="שכפל" onClick={(e) => { e.stopPropagation(); useBuilderStore.getState().duplicateSection(section.id) }}>⧉</button>
-                <button title="גרור" className="cursor-grab active:cursor-grabbing" onMouseDown={(e) => e.stopPropagation()} {...sortable.attributes} {...sortable.listeners}>⋮⋮</button>
-                <button title="מחק" onClick={(e) => { e.stopPropagation(); useBuilderStore.getState().removeSection(section.id) }}>✕</button>
-              </div>
-              <SortableContext
-                items={section.widgets.map((w, idx) => `${section.id}:${w.id}:${idx}`)}
-                strategy={verticalListSortingStrategy}
-              >
-                <div
-                  style={flexToCss(section)}
-                  className={`${section.widgets.length === 0 ? 'min-h-[80px] border border-dashed border-zinc-300' : 'border border-transparent'} rounded transition ${section.widgets.length === 0 ? '' : 'group-hover:border-[var(--qs-outline-strong)] group-hover:border-dashed'}`}
-                  onDragOver={(e) => {
-                    if (e.dataTransfer.types.includes('application/x-qs-widget')) {
-                      e.preventDefault()
-                      const children = Array.from(e.currentTarget.querySelectorAll('[data-qs-index]')) as HTMLElement[]
-                      let afterIndex = -1
-                      for (let i = 0; i < children.length; i++) {
-                        const rect = children[i].getBoundingClientRect()
-                        const third = rect.top + rect.height / 3
-                        const twoThird = rect.top + (2 * rect.height) / 3
-                        // מגנטיות: אם העכבר בשליש העליון → לפני הפריט; אם בשליש התחתון → אחרי הפריט
-                        if (e.clientY > twoThird) afterIndex = i
-                        else if (e.clientY > third) { afterIndex = i - 1; break }
-                        else { afterIndex = i - 1; break }
-                      }
-                      setDragIndicator({ sectionId: section.id, afterIndex })
-                    }
-                  }}
-                  onDrop={(e) => {
-                    const data = e.dataTransfer.getData('application/x-qs-widget')
-                    if (!data) return
-                    try {
-                      const parsed = JSON.parse(data) as { type: string; payload: any }
-                      const idx = dragIndicator && dragIndicator.sectionId === section.id ? dragIndicator.afterIndex + 1 : section.widgets.length
-                      addWidgetAt(section.id, parsed.payload, idx)
-                    } catch {}
-                    setDragIndicator(null)
-                  }}
-                  onDragLeave={() => setDragIndicator(null)}
-                >
-                  {section.widgets.length === 0 && (
-                    <div className="py-6 text-sm text-zinc-500 flex flex-col items-center justify-center gap-2">
-                      <MousePointerSquareDashed size={22} />
-                      <div>גררו ווידג'טים לכאן או הוסיפו מהצד</div>
-                    </div>
-                  )}
-                  {section.widgets.map((w, idx) => (
-                    <div key={w.id} className="relative">
-                      {dragIndicator && dragIndicator.sectionId === section.id && dragIndicator.afterIndex === idx - 1 && idx !== 0 && (
-                        <div className="h-1.5 bg-[var(--qs-outline-strong)] rounded my-1" />
-                      )}
-                      {/* קו לפני הפריט הראשון */}
-                      {dragIndicator && dragIndicator.sectionId === section.id && idx === 0 && dragIndicator.afterIndex === -1 && (
-                        <div className="h-1.5 bg-[var(--qs-outline-strong)] rounded my-1" />
-                      )}
-                      <WidgetRenderer widget={w} sectionId={section.id} index={idx} />
-                      {/* קו אחרי הפריט האחרון */}
-                      {dragIndicator && dragIndicator.sectionId === section.id && idx === section.widgets.length - 1 && dragIndicator.afterIndex === idx && (
-                        <div className="h-1.5 bg-[var(--qs-outline-strong)] rounded my-1" />
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </SortableContext>
-            </section>
-              )
-            })()
-            ))
-          ))}
+            {page.sections.filter((s) => !(s.advanced?.hiddenOn?.[device])).map((section) => (
+              <SectionItem
+                key={section.id}
+                section={section}
+                selected={selected}
+                device={device}
+                select={select}
+                dragIndicator={dragIndicator}
+                setDragIndicator={setDragIndicator}
+                addWidgetAt={addWidgetAt}
+                mergeStyles={mergeStyles}
+                styleToCss={styleToCss}
+                flexToCss={flexToCss}
+              />
+            ))}
           </SortableContext>
         </DndContext>
         )}
@@ -241,6 +166,107 @@ export function Canvas() {
         )
       })()}
     </main>
+  )
+}
+
+function SectionItem({
+  section,
+  selected,
+  device,
+  select,
+  dragIndicator,
+  setDragIndicator,
+  addWidgetAt,
+  mergeStyles,
+  styleToCss,
+  flexToCss,
+}: {
+  section: SectionType
+  selected?: SelectedTarget
+  device: DeviceBreakpoint
+  select: (t: any) => void
+  dragIndicator: { sectionId: string; afterIndex: number } | null
+  setDragIndicator: (v: any) => void
+  addWidgetAt: any
+  mergeStyles: any
+  styleToCss: any
+  flexToCss: any
+}) {
+  const sortable = useSortable({ id: `section:${section.id}` })
+  const transform = CSS.Transform.toString(sortable.transform)
+  const transition = sortable.transition
+  return (
+    <section
+      className={`card group relative border border-transparent group-hover:border-zinc-200 ${section.widgets.length === 0 ? 'border-0' : ''} ${selected?.kind === 'section' && selected.id === section.id ? 'ring-1 ring-[var(--qs-outline-strong)]' : ''}`}
+      ref={sortable.setNodeRef}
+      style={{ ...styleToCss(mergeStyles(section.style, section.responsiveStyle?.[device])), marginLeft: 'auto', marginRight: 'auto', transform, transition }}
+      id={section.advanced?.anchorId}
+      onClick={() => select({ kind: 'section', id: section.id })}
+    >
+      <style>{section.advanced?.customCss ?? ''}</style>
+      <div className="absolute top-1 left-1 z-20 text-xs text-zinc-500 flex items-center gap-2 opacity-0 group-hover:opacity-100 transition pointer-events-auto">
+        <span className="chip cursor-pointer select-none" onClick={(e) => { e.stopPropagation(); select({ kind: 'section', id: section.id }) }}>שורה</span>
+      </div>
+      <div className="e-pill hoverable section-pill" style={{ top: -26, transform: 'translateX(-65%)' }}>
+        <button className="ghost" title="שכפל" onClick={(e) => { e.stopPropagation(); useBuilderStore.getState().duplicateSection(section.id) }}>⧉</button>
+        <button title="גרור" className="cursor-grab active:cursor-grabbing" onMouseDown={(e) => e.stopPropagation()} {...sortable.attributes} {...sortable.listeners}>⋮⋮</button>
+        <button title="מחק" onClick={(e) => { e.stopPropagation(); useBuilderStore.getState().removeSection(section.id) }}>✕</button>
+      </div>
+      <SortableContext items={section.widgets.map((w, idx) => `${section.id}:${w.id}:${idx}`)} strategy={verticalListSortingStrategy}>
+        <div
+          style={flexToCss(section)}
+          className={`${section.widgets.length === 0 ? 'min-h-[80px] border border-dashed border-zinc-300' : 'border border-transparent'} rounded transition ${section.widgets.length === 0 ? '' : 'group-hover:border-[var(--qs-outline-strong)] group-hover:border-dashed'}`}
+          onDragOver={(e) => {
+            if (e.dataTransfer.types.includes('application/x-qs-widget')) {
+              e.preventDefault()
+              const children = Array.from(e.currentTarget.querySelectorAll('[data-qs-index]')) as HTMLElement[]
+              let afterIndex = -1
+              for (let i = 0; i < children.length; i++) {
+                const rect = children[i].getBoundingClientRect()
+                const third = rect.top + rect.height / 3
+                const twoThird = rect.top + (2 * rect.height) / 3
+                if (e.clientY > twoThird) afterIndex = i
+                else if (e.clientY > third) { afterIndex = i - 1; break }
+                else { afterIndex = i - 1; break }
+              }
+              setDragIndicator({ sectionId: section.id, afterIndex })
+            }
+          }}
+          onDrop={(e) => {
+            const data = e.dataTransfer.getData('application/x-qs-widget')
+            if (!data) return
+            try {
+              const parsed = JSON.parse(data) as { type: string; payload: any }
+              const idx = dragIndicator && dragIndicator.sectionId === section.id ? dragIndicator.afterIndex + 1 : section.widgets.length
+              addWidgetAt(section.id, parsed.payload, idx)
+            } catch {}
+            setDragIndicator(null)
+          }}
+          onDragLeave={() => setDragIndicator(null)}
+        >
+          {section.widgets.length === 0 && (
+            <div className="py-6 text-sm text-zinc-500 flex flex-col items-center justify-center gap-2">
+              <MousePointerSquareDashed size={22} />
+              <div>גררו ווידג'טים לכאן או הוסיפו מהצד</div>
+            </div>
+          )}
+          {section.widgets.map((w, idx) => (
+            <div key={w.id} className="relative">
+              {dragIndicator && dragIndicator.sectionId === section.id && dragIndicator.afterIndex === idx - 1 && idx !== 0 && (
+                <div className="h-1.5 bg-[var(--qs-outline-strong)] rounded my-1" />
+              )}
+              {dragIndicator && dragIndicator.sectionId === section.id && idx === 0 && dragIndicator.afterIndex === -1 && (
+                <div className="h-1.5 bg-[var(--qs-outline-strong)] rounded my-1" />
+              )}
+              <WidgetRenderer widget={w} sectionId={section.id} index={idx} />
+              {dragIndicator && dragIndicator.sectionId === section.id && idx === section.widgets.length - 1 && dragIndicator.afterIndex === idx && (
+                <div className="h-1.5 bg-[var(--qs-outline-strong)] rounded my-1" />
+              )}
+            </div>
+          ))}
+        </div>
+      </SortableContext>
+    </section>
   )
 }
 
