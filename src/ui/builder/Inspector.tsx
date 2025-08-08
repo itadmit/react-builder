@@ -61,7 +61,16 @@ export function Inspector() {
   const [mediaModal, setMediaModal] = useState<null | { kind: 'image' | 'video'; widgetId: string }>(null)
   const [assets, setAssets] = useState<Array<{ kind: 'image' | 'video'; url: string }>>([])
   const textEditorRef = useRef<HTMLDivElement | null>(null)
+  const [textDir, setTextDir] = useState<'auto' | 'rtl' | 'ltr'>('auto')
   const [textFmt, setTextFmt] = useState<{ bold: boolean; italic: boolean; underline: boolean; align: 'left' | 'center' | 'right'; list: boolean }>({ bold: false, italic: false, underline: false, align: 'right', list: false })
+
+  function detectDir(text: string): 'auto' | 'rtl' | 'ltr' {
+    const rtlRange = /[\u0590-\u05FF\u0600-\u06FF]/
+    const ltrRange = /[A-Za-z]/
+    if (rtlRange.test(text)) return 'rtl'
+    if (ltrRange.test(text)) return 'ltr'
+    return 'auto'
+  }
 
   const updateTextToolbarState = () => {
     const sel = document.getSelection()
@@ -557,7 +566,7 @@ export function Inspector() {
                     suppressContentEditableWarning
                     dir="auto"
                     ref={textEditorRef}
-                    onInput={(e) => { updateWidget(selectedWidget.id, (w) => { if (w.type === 'text') w.content = (e.currentTarget as HTMLDivElement).innerHTML }); updateTextToolbarState() }}
+                    onInput={(e) => { const html = (e.currentTarget as HTMLDivElement).innerHTML; updateWidget(selectedWidget.id, (w) => { if (w.type === 'text') w.content = html }); const plain = (e.currentTarget as HTMLDivElement).innerText; const dir = detectDir(plain); setTextDir(dir); updateTextToolbarState() }}
                     onPaste={(e) => {
                       // לוודא שהדבקות מכבדות RTL
                       setTimeout(() => updateTextToolbarState(), 0)
@@ -565,6 +574,7 @@ export function Inspector() {
                     onKeyUp={() => updateTextToolbarState()}
                     onMouseUp={() => updateTextToolbarState()}
                     style={{ unicodeBidi: 'plaintext', whiteSpace: 'pre-wrap' }}
+                    dir={textDir}
                     dangerouslySetInnerHTML={{ __html: selectedWidget.type === 'text' ? (selectedWidget.content ?? '') : '' }}
                   />
                   <div className="text-[11px] text-zinc-500">אפשר לערוך: מודגש, נטוי, קו תחתון, רשימה, יישור, ירידת שורה (Enter)</div>
