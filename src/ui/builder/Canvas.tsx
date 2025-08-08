@@ -110,7 +110,15 @@ export function Canvas() {
       {(() => {
         const previewWidth = device === 'desktop' ? 1140 : device === 'tablet' ? 820 : 390
         return (
-          <div className="mx-auto bg-white border rounded shadow-sm" style={{ width: '100%', maxWidth: `${previewWidth * (zoom || 1)}px`, transition: 'width 150ms cubic-bezier(0.2, 0.7, 0.2, 1)' }}>
+          <div
+            className="mx-auto bg-white border rounded shadow-sm"
+            style={{
+              width: '100%',
+              maxWidth: `${previewWidth * (zoom || 1)}px`,
+              minHeight: 'calc(100vh - 48px)', // שומר גובה לבן מלא כמו בדסקטופ (padding 24px * 2)
+              transition: 'max-width 220ms cubic-bezier(0.2, 0.7, 0.2, 1), width 220ms cubic-bezier(0.2, 0.7, 0.2, 1)'
+            }}
+          >
 
         {page.sections.length === 0 ? (
           <div
