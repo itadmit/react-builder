@@ -510,7 +510,9 @@ export function WidgetRenderer({ widget, sectionId, index, draggable = true }: {
 
 function ProductSliderView({ widget, device }: { widget: Extract<Widget, { type: 'productSlider' }>; device: 'desktop' | 'tablet' | 'mobile' }) {
   const containerRef = useRef<HTMLDivElement | null>(null)
-  const slides = (widget.productIds && widget.productIds.length ? widget.productIds : ['1', '2', '3', '4', '5']) as string[]
+  const slides = (widget.products && widget.products.length
+    ? widget.products.map((p) => p.id)
+    : (widget.productIds && widget.productIds.length ? widget.productIds : ['1', '2', '3', '4', '5'])) as string[]
   const perView = widget.slidesPerView?.[device] ?? 4
   const pageCount = Math.max(1, Math.ceil(slides.length / perView))
   const [page, setPage] = useState(0)
@@ -536,14 +538,24 @@ function ProductSliderView({ widget, device }: { widget: Extract<Widget, { type:
       <div className="relative">
         <div className="overflow-x-auto scroll-smooth snap-x snap-mandatory" ref={containerRef}>
           <div className="flex" style={{ width: `${(slides.length / perView) * 100}%` }}>
-            {slides.map((id, idx) => (
-              <div key={id} className="shrink-0 snap-start px-2" style={{ width: `${100 / perView}%` }}>
-                <div className="border rounded p-3">
-                  <div className="aspect-video bg-zinc-100 rounded mb-2" />
-                  <div className="text-sm">מוצר #{id}</div>
+            {slides.map((id, idx) => {
+              const mock = (widget.products ?? []).find((p) => p.id === id)
+              const title = mock?.title ?? `מוצר #${id}`
+              const href = mock?.href ?? '#'
+              const image = mock?.image ?? `https://picsum.photos/seed/${id}/400/300`
+              const price = mock?.price
+              return (
+                <div key={id} className="shrink-0 snap-start px-2" style={{ width: `${100 / perView}%` }}>
+                  <a href={href} className="block border rounded p-3">
+                    <div className="aspect-video bg-zinc-100 rounded mb-2 overflow-hidden">
+                      <img src={image} className="w-full h-full object-cover" />
+                    </div>
+                    <div className="text-sm font-medium line-clamp-2">{title}</div>
+                    {price !== undefined && <div className="text-xs text-zinc-600 mt-1">₪{price}</div>}
+                  </a>
                 </div>
-              </div>
-            ))}
+              )
+            })}
           </div>
         </div>
         {widget.arrows && (

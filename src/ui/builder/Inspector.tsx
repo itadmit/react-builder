@@ -998,6 +998,105 @@ export function Inspector() {
         />
       )}
 
+      {tab === 'general' && selectedWidget.type === 'productSlider' && (
+        <Accordion
+          items={[{
+            id: 'product-slider-general',
+            title: 'סליידר מוצרים',
+            defaultOpen: true,
+            children: (
+              <div className="space-y-3">
+                <Field label="כותרת">
+                  <TextInput
+                    value={selectedWidget.type === 'productSlider' ? (selectedWidget.title ?? '') : ''}
+                    onChange={(e) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'productSlider') w.title = e.target.value || undefined })}
+                  />
+                </Field>
+                <div className="grid grid-cols-3 gap-3">
+                  <Field label="פריסה בדסקטופ">
+                    <NumberInputUI
+                      value={selectedWidget.type === 'productSlider' ? (selectedWidget.slidesPerView?.desktop ?? 4) : 4}
+                      onChange={(e) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'productSlider') w.slidesPerView = { ...(w.slidesPerView ?? {}), desktop: Number((e.target as HTMLInputElement).value || 0) } })}
+                    />
+                  </Field>
+                  <Field label="בטאבלט">
+                    <NumberInputUI
+                      value={selectedWidget.type === 'productSlider' ? (selectedWidget.slidesPerView?.tablet ?? 2) : 2}
+                      onChange={(e) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'productSlider') w.slidesPerView = { ...(w.slidesPerView ?? {}), tablet: Number((e.target as HTMLInputElement).value || 0) } })}
+                    />
+                  </Field>
+                  <Field label="במובייל">
+                    <NumberInputUI
+                      value={selectedWidget.type === 'productSlider' ? (selectedWidget.slidesPerView?.mobile ?? 1) : 1}
+                      onChange={(e) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'productSlider') w.slidesPerView = { ...(w.slidesPerView ?? {}), mobile: Number((e.target as HTMLInputElement).value || 0) } })}
+                    />
+                  </Field>
+                </div>
+                <div className="grid grid-cols-3 gap-3">
+                  <Field label="חצים">
+                    <Checkbox
+                      label="הצג חצים"
+                      checked={selectedWidget.type === 'productSlider' ? !!selectedWidget.arrows : false}
+                      onChange={(v) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'productSlider') w.arrows = v })}
+                    />
+                  </Field>
+                  <Field label="נקודות">
+                    <Checkbox
+                      label="הצג נקודות"
+                      checked={selectedWidget.type === 'productSlider' ? !!selectedWidget.dots : false}
+                      onChange={(v) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'productSlider') w.dots = v })}
+                    />
+                  </Field>
+                  <Field label="Autoplay">
+                    <Checkbox
+                      label="נגן אוטומטי"
+                      checked={selectedWidget.type === 'productSlider' ? !!selectedWidget.autoplay : false}
+                      onChange={(v) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'productSlider') w.autoplay = v })}
+                    />
+                  </Field>
+                </div>
+                <div className="settings-hr" />
+                <div className="flex items-center justify-between">
+                  <div className="text-xs text-zinc-600">מוצרים (מוקאפים)</div>
+                  <button
+                    className="btn btn-ghost"
+                    onClick={() => updateWidget(selectedWidget.id, (w) => {
+                      if (w.type === 'productSlider') {
+                        const id = String(Date.now())
+                        const arr = [ ...(w.products ?? []) ]
+                        arr.push({ id, title: `מוצר #${(arr.length+1)}`, price: 99, image: `https://picsum.photos/seed/${id}/400/300` })
+                        w.products = arr as any
+                      }
+                    })}
+                  >הוסף מוצר</button>
+                </div>
+                <div className="space-y-2">
+                  {((selectedWidget.type === 'productSlider' ? (selectedWidget.products ?? []) : []) as any[]).map((p, idx) => (
+                    <div key={p.id ?? idx} className="border rounded p-2 flex items-start gap-2">
+                      <img src={p.image ?? 'https://picsum.photos/seed/mock/80/80'} className="w-16 h-16 object-cover rounded" />
+                      <div className="flex-1 space-y-2">
+                        <div className="grid grid-cols-2 gap-2">
+                          <TextInput placeholder="שם מוצר" value={p.title ?? ''} onChange={(e) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'productSlider') { const arr = [...(w.products ?? [])]; arr[idx] = { ...(arr[idx] ?? {}), title: e.target.value }; w.products = arr as any } })} />
+                          <NumberInputUI value={p.price ?? 0 as any} onChange={(e) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'productSlider') { const arr = [...(w.products ?? [])]; arr[idx] = { ...(arr[idx] ?? {}), price: Number((e.target as HTMLInputElement).value || 0) }; w.products = arr as any } })} />
+                        </div>
+                        <TextInput placeholder="תמונה (URL)" value={p.image ?? ''} onChange={(e) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'productSlider') { const arr = [...(w.products ?? [])]; arr[idx] = { ...(arr[idx] ?? {}), image: e.target.value || undefined }; w.products = arr as any } })} />
+                        <TextInput placeholder="קישור (לא חובה)" value={p.href ?? ''} onChange={(e) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'productSlider') { const arr = [...(w.products ?? [])]; arr[idx] = { ...(arr[idx] ?? {}), href: e.target.value || undefined }; w.products = arr as any } })} />
+                        <div className="flex flex-wrap gap-2">
+                          <button className="btn btn-ghost" onClick={() => updateWidget(selectedWidget.id, (w) => { if (w.type === 'productSlider') { const arr = [...(w.products ?? [])]; if (idx > 0) { const t = arr[idx-1]; arr[idx-1] = arr[idx]; arr[idx] = t; } w.products = arr as any } })}>מעלה</button>
+                          <button className="btn btn-ghost" onClick={() => updateWidget(selectedWidget.id, (w) => { if (w.type === 'productSlider') { const arr = [...(w.products ?? [])]; if (idx < arr.length-1) { const t = arr[idx+1]; arr[idx+1] = arr[idx]; arr[idx] = t; } w.products = arr as any } })}>מוריד</button>
+                          <button className="btn btn-ghost" onClick={() => updateWidget(selectedWidget.id, (w) => { if (w.type === 'productSlider') { const arr = [...(w.products ?? [])]; arr.splice(idx,0, { ...(arr[idx] ?? {}), id: String(Date.now()) }); w.products = arr as any } })}>שכפל</button>
+                          <button className="btn btn-ghost" onClick={() => updateWidget(selectedWidget.id, (w) => { if (w.type === 'productSlider') { const arr = [...(w.products ?? [])]; arr.splice(idx,1); w.products = arr as any } })}>מחק</button>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )
+          }]}
+        />
+      )}
+
       {tab === 'general' && selectedWidget.type === 'spacer' && (
         <Accordion
           items={[

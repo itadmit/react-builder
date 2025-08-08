@@ -216,6 +216,8 @@ export type ProductSliderWidget = WidgetCommon & {
   type: 'productSlider'
   title?: string
   productIds: string[]
+  // מוקאפים להצגה וביניים עד חיבור לשרת
+  products?: Array<{ id: string; title: string; price?: number; image?: string; href?: string }>
   slidesPerView?: Partial<Record<DeviceBreakpoint, number>>
   arrows?: boolean
   dots?: boolean
