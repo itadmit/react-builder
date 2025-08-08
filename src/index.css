@@ -100,7 +100,7 @@ body {
 .e-pill .ghost { background: transparent; border: 0; }
 
 /* שורה: פלטה סגולה לזיהוי מהיר */
-.section-pill { background: var(--qs-outline-strong); }
+.section-pill { background: var(--qs-outline-strong); z-index: 70; }
 
 .scrollbar-thin::-webkit-scrollbar {
   width: 8px;

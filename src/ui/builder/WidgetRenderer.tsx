@@ -199,7 +199,7 @@ export function WidgetRenderer({ widget, sectionId, index, draggable = true }: {
       </div>
       )}
       {draggable && (
-      <div className="e-pill">
+      <div className="e-pill" style={{ zIndex: 60 }}>
         <button title="מחק" onClick={() => removeWidget(widget.id)} aria-label="מחיקה">✕</button>
         <button title="גרור" className="cursor-grab active:cursor-grabbing" aria-label="גרירה" {...listeners}>⋮⋮</button>
         <button title="שכפל" onClick={() => duplicateWidget(widget.id)} aria-label="שכפול">⧉</button>

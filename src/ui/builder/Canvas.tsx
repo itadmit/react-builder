@@ -138,7 +138,7 @@ export function Canvas() {
                 <span className="chip cursor-pointer select-none" onClick={(e) => { e.stopPropagation(); select({ kind: 'section', id: section.id }) }}>שורה</span>
                 {/* ניתן לחבר למחיקה/שכפול מקטע בהמשך */}
               </div>
-              <div className="e-pill hoverable section-pill">
+              <div className="e-pill hoverable section-pill" style={{ top: -18 }}>
                 <button className="ghost" title="שכפל" onClick={(e) => { e.stopPropagation(); useBuilderStore.getState().duplicateSection(section.id) }}>⧉</button>
                 <button title="גרור" className="cursor-grab active:cursor-grabbing" onMouseDown={(e) => e.stopPropagation()}>⋮⋮</button>
                 <button title="מחק" onClick={(e) => { e.stopPropagation(); useBuilderStore.getState().removeSection(section.id) }}>✕</button>
