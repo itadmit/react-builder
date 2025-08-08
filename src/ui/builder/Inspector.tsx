@@ -567,11 +567,11 @@ export function Inspector() {
               children: (
                 <div className="space-y-2 qs-quill-editor">
                   {(() => {
-                    const ff = (selectedWidget.responsiveStyle?.[device]?.fontFamily || selectedWidget.style?.fontFamily) as string | undefined
+                    const ff = (selectedWidget.responsiveStyle?.[device]?.fontFamily || selectedWidget.style?.fontFamily || 'Noto Sans Hebrew, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial') as string
                     const fs = (selectedWidget.responsiveStyle?.[device]?.fontSize || selectedWidget.style?.fontSize) as number | undefined
                     const lh = (selectedWidget.responsiveStyle?.[device]?.lineHeight || selectedWidget.style?.lineHeight) as number | undefined
                     return (
-                      <style>{`.qs-quill-editor .ql-editor { font-family: ${ff ? ff : 'inherit'}; font-size: ${fs ? fs + 'px' : 'inherit'}; line-height: ${lh ? lh : 'inherit'}; }
+                      <style>{`.qs-quill-editor .ql-editor { font-family: ${ff}; font-size: ${fs ? fs + 'px' : 'inherit'}; line-height: ${lh ? lh : 'inherit'}; }
                       .qs-quill-editor .ql-container { min-height: 140px; }
                       .qs-quill-editor { overflow: visible; }`}</style>
                     )

@@ -21,6 +21,13 @@ body {
   font-family: 'Noto Sans Hebrew', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
 }
 
+/* Quill alignment classes should also work in preview/render */
+.ql-align-right { text-align: right; }
+.ql-align-center { text-align: center; }
+.ql-align-left { text-align: left; }
+.ql-direction-rtl { direction: rtl; text-align: right; }
+.ql-direction-ltr { direction: ltr; text-align: left; }
+
 /* Utilities */
 .btn { @apply inline-flex items-center justify-center gap-2 rounded px-3 py-1.5 text-sm transition-colors; }
 .btn-primary { @apply text-white; background: var(--qs-primary); }
