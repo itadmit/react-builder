@@ -1,18 +1,7 @@
 import { useBuilderStore } from '@/store/useBuilderStore'
 import type { Widget } from '@/types/builder'
 import { useMemo, useState, useRef } from 'react'
-import ReactQuill from 'react-quill'
-import Quill from 'quill'
-
-// הבטחת תמיכה בכפתור "יישור שמאל" כערך מפורש ('left')
-try {
-  const AlignClass = (Quill as any).import('attributors/class/align')
-  if (AlignClass && Array.isArray(AlignClass.whitelist)) {
-    AlignClass.whitelist = ['left', 'center', 'right', 'justify']
-    ;(Quill as any).register(AlignClass, true)
-  }
-} catch {}
-import 'react-quill/dist/quill.snow.css'
+// הוסר ReactQuill/Quill – חוזרים לעורך בסיסי
 import { Field, TextInput, NumberInputUI, Select, ColorPicker } from '@/ui/controls/Controls'
 import { Accordion } from '@/ui/controls/Accordion'
 import { Type, Link2, Palette, AlignLeft, AlignCenter, AlignRight, Bold, Italic, Underline, List, Eye, EyeOff, TypeIcon, Frame, MoveVertical, MoveHorizontal, Circle, UploadCloud } from 'lucide-react'
@@ -575,37 +564,36 @@ export function Inspector() {
               title: 'טקסט',
               defaultOpen: true,
               children: (
-                <div className="space-y-2 qs-quill-editor">
-                  {(() => {
-                    const ff = (selectedWidget.responsiveStyle?.[device]?.fontFamily || selectedWidget.style?.fontFamily || 'Noto Sans Hebrew, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial') as string
-                    const fs = (selectedWidget.responsiveStyle?.[device]?.fontSize || selectedWidget.style?.fontSize) as number | undefined
-                    const lh = (selectedWidget.responsiveStyle?.[device]?.lineHeight || selectedWidget.style?.lineHeight) as number | undefined
-                    return (
-                      <style>{`.qs-quill-editor .ql-editor { font-family: ${ff}; font-size: ${fs ? fs + 'px' : 'inherit'}; line-height: ${lh ? lh : 'inherit'}; }
-                      .qs-quill-editor .ql-container { min-height: 140px; }
-                      .qs-quill-editor { overflow: visible; }`}</style>
-                    )
-                  })()}
-                  <ReactQuill
-                    theme="snow"
-                    value={selectedWidget.type === 'text' ? (selectedWidget.content ?? '') : ''}
-                    onChange={(html) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'text') w.content = html })}
-                    modules={{
-                      toolbar: {
-                        container: [
-                          ['bold','italic','underline'],
-                          [{ list: 'bullet' }],
-                          [{ align: 'right' }, { align: 'center' }, { align: 'left' }, 'align-left']
-                        ],
-                        handlers: {
-                          'align-left': function(this: any) {
-                            try { this.quill.format('align', 'left', 'user') } catch {}
-                          },
-                        },
-                      },
+                <div className="space-y-2">
+                  <div className="flex items-center gap-2 text-xs">
+                    <button className="btn btn-ghost" onMouseDown={(e)=>e.preventDefault()} onClick={() => document.execCommand('bold')}>B</button>
+                    <button className="btn btn-ghost" onMouseDown={(e)=>e.preventDefault()} onClick={() => document.execCommand('italic')}>I</button>
+                    <button className="btn btn-ghost" onMouseDown={(e)=>e.preventDefault()} onClick={() => document.execCommand('underline')}>U</button>
+                    <div className="mx-2" />
+                    <button className="btn btn-ghost" onMouseDown={(e)=>e.preventDefault()} onClick={() => document.execCommand('insertUnorderedList')}>•</button>
+                    <div className="mx-2" />
+                    <button className="btn btn-ghost" onMouseDown={(e)=>e.preventDefault()} onClick={() => document.execCommand('justifyRight')}>⇤</button>
+                    <button className="btn btn-ghost" onMouseDown={(e)=>e.preventDefault()} onClick={() => document.execCommand('justifyCenter')}>≡</button>
+                    <button className="btn btn-ghost" onMouseDown={(e)=>e.preventDefault()} onClick={() => document.execCommand('justifyLeft')}>⇥</button>
+                  </div>
+                  <div
+                    contentEditable
+                    suppressContentEditableWarning
+                    className="outline-none border border-zinc-300 rounded p-2 min-h-[120px]"
+                    dir="rtl"
+                    style={{
+                      fontFamily: (selectedWidget.responsiveStyle?.[device]?.fontFamily || selectedWidget.style?.fontFamily || 'Noto Sans Hebrew, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial') as string,
+                      fontSize: selectedWidget.responsiveStyle?.[device]?.fontSize || selectedWidget.style?.fontSize,
+                      lineHeight: selectedWidget.responsiveStyle?.[device]?.lineHeight || selectedWidget.style?.lineHeight || 1,
+                      textAlign: (selectedWidget.style?.textAlign as any) || 'right',
+                      unicodeBidi: 'plaintext',
+                      whiteSpace: 'pre-wrap',
                     }}
-                    formats={['bold','italic','underline','align','list']}
-                    defaultValue={selectedWidget.type === 'text' ? (selectedWidget.content ?? '') : ''}
+                    onInput={(e) => {
+                      const html = (e.currentTarget as HTMLDivElement).innerHTML
+                      updateWidget(selectedWidget.id, (w) => { if (w.type === 'text') w.content = html })
+                    }}
+                    dangerouslySetInnerHTML={{ __html: selectedWidget.type === 'text' ? (selectedWidget.content ?? '') : '' }}
                   />
                 </div>
               ),
