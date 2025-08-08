@@ -2,6 +2,16 @@ import { useBuilderStore } from '@/store/useBuilderStore'
 import type { Widget } from '@/types/builder'
 import { useMemo, useState, useRef } from 'react'
 import ReactQuill from 'react-quill'
+import Quill from 'quill'
+
+// הבטחת תמיכה בכפתור "יישור שמאל" כערך מפורש ('left')
+try {
+  const AlignClass = (Quill as any).import('attributors/class/align')
+  if (AlignClass && Array.isArray(AlignClass.whitelist)) {
+    AlignClass.whitelist = ['left', 'center', 'right', 'justify']
+    ;(Quill as any).register(AlignClass, true)
+  }
+} catch {}
 import 'react-quill/dist/quill.snow.css'
 import { Field, TextInput, NumberInputUI, Select, ColorPicker } from '@/ui/controls/Controls'
 import { Accordion } from '@/ui/controls/Accordion'

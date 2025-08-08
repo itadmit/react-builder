@@ -29,6 +29,7 @@ body {
 .ql-align-right { text-align: right; }
 .ql-align-center { text-align: center; }
 .ql-align-left { text-align: left; }
+.ql-align-justify { text-align: justify; }
 .ql-direction-rtl { direction: rtl; }
 .ql-direction-ltr { direction: ltr; text-align: left; }
 
