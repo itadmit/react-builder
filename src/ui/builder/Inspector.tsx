@@ -72,6 +72,21 @@ export function Inspector() {
     return 'auto'
   }
 
+  const RLM = '\u200F'
+  function ensureRLM(el: HTMLDivElement) {
+    if (!el) return
+    const html = el.innerHTML
+    if (!html.startsWith(RLM)) {
+      el.innerHTML = RLM + html
+      const range = document.createRange()
+      range.selectNodeContents(el)
+      range.collapse(false)
+      const sel = window.getSelection()
+      sel?.removeAllRanges()
+      sel?.addRange(range)
+    }
+  }
+
   const updateTextToolbarState = () => {
     const sel = document.getSelection()
     const root = textEditorRef.current
@@ -566,6 +581,7 @@ export function Inspector() {
                     suppressContentEditableWarning
                     dir="auto"
                     ref={textEditorRef}
+                    onFocus={(e) => { ensureRLM(e.currentTarget) }}
                     onInput={(e) => { const html = (e.currentTarget as HTMLDivElement).innerHTML; updateWidget(selectedWidget.id, (w) => { if (w.type === 'text') w.content = html }); const plain = (e.currentTarget as HTMLDivElement).innerText; const dir = detectDir(plain); setTextDir(dir); updateTextToolbarState() }}
                     onPaste={(e) => {
                       // לוודא שהדבקות מכבדות RTL
