@@ -29,8 +29,13 @@ body {
 .ql-align-right { text-align: right; }
 .ql-align-center { text-align: center; }
 .ql-align-left { text-align: left; }
-.ql-direction-rtl { direction: rtl; text-align: right; }
+.ql-direction-rtl { direction: rtl; }
 .ql-direction-ltr { direction: ltr; text-align: left; }
+
+/* במקרה של RTL + יישור מפורש, היישור גובר */
+.ql-direction-rtl.ql-align-left { text-align: left !important; }
+.ql-direction-rtl.ql-align-center { text-align: center !important; }
+.ql-direction-rtl.ql-align-right { text-align: right !important; }
 
 /* Utilities */
 .btn { @apply inline-flex items-center justify-center gap-2 rounded px-3 py-1.5 text-sm transition-colors; }
