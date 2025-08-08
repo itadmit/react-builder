@@ -1,7 +1,8 @@
 import { useBuilderStore } from '@/store/useBuilderStore'
 import { WidgetRenderer } from './WidgetRenderer'
 import { DndContext, DragEndEvent } from '@dnd-kit/core'
-import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
+import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
 import { useMemo, useState } from 'react'
 import { MousePointerSquareDashed } from 'lucide-react'
 import type { StyleValues } from '@/types/builder'
@@ -10,6 +11,7 @@ export function Canvas() {
   const page = useBuilderStore((s) => s.page)
   const select = useBuilderStore((s) => s.select)
   const moveWidget = useBuilderStore((s) => s.moveWidget)
+  const moveSection = useBuilderStore((s) => s.moveSection)
   const addWidgetAt = useBuilderStore((s) => s.addWidgetAt)
   const addWidget = useBuilderStore((s) => s.addWidget)
   const addSection = useBuilderStore((s) => s.addSection)
@@ -23,13 +25,22 @@ export function Canvas() {
     const { active, over } = event
     setDragIndicator(null)
     if (!over) return
-    const [fromSectionId, widgetId] = String(active.id).split(':')
-    const [toSectionId, , toIndexStr] = String(over.id).split(':')
+    const activeId = String(active.id)
+    const overId = String(over.id)
+    // גרירת שורות: מזהים ע"י prefix 'section:'
+    if (activeId.startsWith('section:') && overId.startsWith('section:')) {
+      const fromId = activeId.slice('section:'.length)
+      const overSectionId = overId.slice('section:'.length)
+      const toIndex = page.sections.findIndex((s) => s.id === overSectionId)
+      if (toIndex !== -1) moveSection(fromId, toIndex)
+      return
+    }
+    // גרירת ווידג׳טים
+    const [fromSectionId, widgetId] = activeId.split(':')
+    const [toSectionId, , toIndexStr] = overId.split(':')
     let toIndex = Number(toIndexStr)
     if (!widgetId || Number.isNaN(toIndex)) return
-    if (fromSectionId && toSectionId) {
-      moveWidget(widgetId, toSectionId, toIndex)
-    }
+    if (fromSectionId && toSectionId) moveWidget(widgetId, toSectionId, toIndex)
   }
 
   function mergeStyles(base?: StyleValues, override?: StyleValues): StyleValues {
@@ -124,12 +135,19 @@ export function Canvas() {
           </div>
         ) : (
         <DndContext onDragEnd={onDragEnd}>
+          <SortableContext items={page.sections.map((s) => `section:${s.id}`)} strategy={verticalListSortingStrategy}>
           {page.sections.map((section) => (
             (section.advanced?.hiddenOn?.[device] ? null : (
+            (() => {
+              const sortable = useSortable({ id: `section:${section.id}` })
+              const transform = CSS.Transform.toString(sortable.transform)
+              const transition = sortable.transition
+              return (
             <section
               key={section.id}
               className={`card group relative border border-transparent group-hover:border-zinc-200 ${section.widgets.length === 0 ? 'border-0' : ''} ${selected?.kind === 'section' && selected.id === section.id ? 'ring-1 ring-[var(--qs-outline-strong)]' : ''}`}
-              style={{ ...styleToCss(mergeStyles(section.style, section.responsiveStyle?.[device])), marginLeft: 'auto', marginRight: 'auto' }}
+              ref={sortable.setNodeRef}
+              style={{ ...styleToCss(mergeStyles(section.style, section.responsiveStyle?.[device])), marginLeft: 'auto', marginRight: 'auto', transform, transition }}
               id={section.advanced?.anchorId}
           onClick={() => select({ kind: 'section', id: section.id })}
             >
@@ -140,7 +158,7 @@ export function Canvas() {
               </div>
               <div className="e-pill hoverable section-pill" style={{ top: -26, transform: 'translateX(-65%)' }}>
                 <button className="ghost" title="שכפל" onClick={(e) => { e.stopPropagation(); useBuilderStore.getState().duplicateSection(section.id) }}>⧉</button>
-                <button title="גרור" className="cursor-grab active:cursor-grabbing" onMouseDown={(e) => e.stopPropagation()}>⋮⋮</button>
+                <button title="גרור" className="cursor-grab active:cursor-grabbing" onMouseDown={(e) => e.stopPropagation()} {...sortable.attributes} {...sortable.listeners}>⋮⋮</button>
                 <button title="מחק" onClick={(e) => { e.stopPropagation(); useBuilderStore.getState().removeSection(section.id) }}>✕</button>
               </div>
               <SortableContext
@@ -204,8 +222,11 @@ export function Canvas() {
                 </div>
               </SortableContext>
             </section>
+              )
+            })()
             ))
           ))}
+          </SortableContext>
         </DndContext>
         )}
           </div>

@@ -27,6 +27,7 @@ type BuilderActions = {
   clearPage: () => void
   addSection: () => void
   removeSection: (sectionId: string) => void
+  moveSection: (sectionId: string, toIndex: number) => void
   updateSection: (sectionId: string, updater: (s: Section) => void) => void
   duplicateSection: (sectionId: string) => void
   addWidget: (sectionId: string, widget: Omit<Widget, 'id'>) => void
@@ -137,6 +138,20 @@ export const useBuilderStore = create<BuilderState & BuilderActions>()(
         }),
         false,
         'removeSection',
+      ),
+    moveSection: (sectionId, toIndex) =>
+      set(
+        produce<BuilderState>((draft) => {
+          draft.past.push(JSON.parse(JSON.stringify(draft.page)))
+          draft.future = []
+          const fromIndex = draft.page.sections.findIndex((s) => s.id === sectionId)
+          if (fromIndex === -1) return
+          const clamped = Math.max(0, Math.min(toIndex, draft.page.sections.length - 1))
+          const [sec] = draft.page.sections.splice(fromIndex, 1)
+          draft.page.sections.splice(clamped, 0, sec)
+        }),
+        false,
+        'moveSection',
       ),
     updateSection: (sectionId, updater) =>
       set(
