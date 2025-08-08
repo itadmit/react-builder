@@ -1,6 +1,8 @@
 import { useBuilderStore } from '@/store/useBuilderStore'
 import type { Widget } from '@/types/builder'
 import { useMemo, useState, useRef } from 'react'
+import ReactQuill from 'react-quill'
+import 'react-quill/dist/quill.snow.css'
 import { Field, TextInput, NumberInputUI, Select, ColorPicker } from '@/ui/controls/Controls'
 import { Accordion } from '@/ui/controls/Accordion'
 import { Type, Link2, Palette, AlignLeft, AlignCenter, AlignRight, Bold, Italic, Underline, List, Eye, EyeOff, TypeIcon, Frame, MoveVertical, MoveHorizontal, Circle, UploadCloud } from 'lucide-react'
@@ -564,36 +566,12 @@ export function Inspector() {
               defaultOpen: true,
               children: (
                 <div className="space-y-2">
-                  <div className="flex items-center gap-1 border rounded p-1 bg-white">
-                    <button className={`px-2 py-1 rounded ${textFmt.bold ? 'bg-zinc-200' : 'hover:bg-zinc-100'}`} title="מודגש" onMouseDown={(e) => { e.preventDefault(); textEditorRef.current && textEditorRef.current.focus(); document.execCommand('bold'); setTimeout(updateTextToolbarState, 0) }}><Bold size={14} /></button>
-                    <button className={`px-2 py-1 rounded ${textFmt.italic ? 'bg-zinc-200' : 'hover:bg-zinc-100'}`} title="נטוי" onMouseDown={(e) => { e.preventDefault(); textEditorRef.current && textEditorRef.current.focus(); document.execCommand('italic'); setTimeout(updateTextToolbarState, 0) }}><Italic size={14} /></button>
-                    <button className={`px-2 py-1 rounded ${textFmt.underline ? 'bg-zinc-200' : 'hover:bg-zinc-100'}`} title="קו תחתון" onMouseDown={(e) => { e.preventDefault(); textEditorRef.current && textEditorRef.current.focus(); document.execCommand('underline'); setTimeout(updateTextToolbarState, 0) }}><Underline size={14} /></button>
-                    <div className="w-px h-5 bg-zinc-200 mx-1" />
-                    <button className={`px-2 py-1 rounded ${textFmt.align === 'right' ? 'bg-zinc-200' : 'hover:bg-zinc-100'}`} title="יישור ימין" onMouseDown={(e) => { e.preventDefault(); textEditorRef.current && textEditorRef.current.focus(); document.execCommand('justifyRight'); setTimeout(updateTextToolbarState, 0) }}><AlignRight size={14} /></button>
-                    <button className={`px-2 py-1 rounded ${textFmt.align === 'center' ? 'bg-zinc-200' : 'hover:bg-zinc-100'}`} title="יישור מרכז" onMouseDown={(e) => { e.preventDefault(); textEditorRef.current && textEditorRef.current.focus(); document.execCommand('justifyCenter'); setTimeout(updateTextToolbarState, 0) }}><AlignCenter size={14} /></button>
-                    <button className={`px-2 py-1 rounded ${textFmt.align === 'left' ? 'bg-zinc-200' : 'hover:bg-zinc-100'}`} title="יישור שמאל" onMouseDown={(e) => { e.preventDefault(); textEditorRef.current && textEditorRef.current.focus(); document.execCommand('justifyLeft'); setTimeout(updateTextToolbarState, 0) }}><AlignLeft size={14} /></button>
-                    <div className="w-px h-5 bg-zinc-200 mx-1" />
-                    <button className={`px-2 py-1 rounded ${textFmt.list ? 'bg-zinc-200' : 'hover:bg-zinc-100'}`} title="רשימה" onMouseDown={(e) => { e.preventDefault(); textEditorRef.current && textEditorRef.current.focus(); document.execCommand('insertUnorderedList'); setTimeout(updateTextToolbarState, 0) }}><List size={14} /></button>
-                  </div>
-                  <div
-                    className="min-h-[112px] rounded-md border px-3 py-2 text-sm bg-white/80 dark:bg-zinc-900/80 focus:outline-none"
-                    contentEditable
-                    suppressContentEditableWarning
-                    dir="auto"
-                    ref={textEditorRef}
-                    onFocus={(e) => { ensureRLM(e.currentTarget) }}
-                    onInput={(e) => { const html = (e.currentTarget as HTMLDivElement).innerHTML; updateWidget(selectedWidget.id, (w) => { if (w.type === 'text') w.content = html }); const plain = (e.currentTarget as HTMLDivElement).innerText; const dir = detectDir(plain); setTextDir(dir); updateTextToolbarState() }}
-                    onPaste={(e) => {
-                      // לוודא שהדבקות מכבדות RTL
-                      setTimeout(() => updateTextToolbarState(), 0)
-                    }}
-                    onKeyUp={() => updateTextToolbarState()}
-                    onMouseUp={() => updateTextToolbarState()}
-                    style={{ whiteSpace: 'pre-wrap', textAlign: 'right' }}
-                    dir="rtl"
-                    dangerouslySetInnerHTML={{ __html: selectedWidget.type === 'text' ? (selectedWidget.content ?? '') : '' }}
+                  <ReactQuill
+                    theme="snow"
+                    value={selectedWidget.type === 'text' ? (selectedWidget.content ?? '') : ''}
+                    onChange={(html) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'text') w.content = html })}
+                    modules={{ toolbar: [[{ list: 'bullet' }], [{ align: [] }], ['bold', 'italic', 'underline']] }}
                   />
-                  <div className="text-[11px] text-zinc-500">אפשר לערוך: מודגש, נטוי, קו תחתון, רשימה, יישור, ירידת שורה (Enter)</div>
                 </div>
               ),
             },

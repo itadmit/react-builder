@@ -121,7 +121,9 @@ function LayersPanel() {
       <DndContext onDragEnd={onDragEnd}>
         {page.sections.map((section, si) => (
           <div key={section.id} className="mb-2">
-            <div className="px-2 py-1 text-xs font-medium text-zinc-600">שורה {si + 1}</div>
+            <button className="px-2 py-1 text-xs font-medium text-zinc-600 w-full text-right hover:bg-zinc-50 rounded" onClick={() => select({ kind: 'section', id: section.id })}>
+              שורה {si + 1}
+            </button>
             <SortableContext items={section.widgets.map((w, idx) => `${section.id}:${w.id}:${idx}`)} strategy={verticalListSortingStrategy}>
               <div className="ml-2 border rounded">
                 {section.widgets.map((w, idx) => (
