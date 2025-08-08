@@ -3,7 +3,7 @@ import ReactDOM from 'react-dom/client'
 import '../index.css'
 import { WidgetRenderer } from '@/ui/builder/WidgetRenderer'
 import { useState } from 'react'
-import type { PageSchema } from '@/types/builder'
+import type { PageSchema, StyleValues } from '@/types/builder'
 
 function PreviewApp() {
   const bootstrap = (window as any).__PREVIEW_BOOTSTRAP__
@@ -14,16 +14,47 @@ function PreviewApp() {
   // Fallback אם מגיע בפורמט { components }
   const sections = (page?.sections ?? [])
   if (!page) return <div className="p-8 text-center text-sm text-zinc-500">אין נתוני תצוגה. פתחו מהבילדר או הטעינו דרך השרת.</div>
+  function styleToCss(style?: StyleValues): React.CSSProperties {
+    const margin = style?.margin
+    const padding = style?.padding
+    return {
+      background: style?.background,
+      color: style?.color,
+      borderRadius: style?.borderRadius,
+      borderColor: style?.borderColor,
+      borderWidth: style?.borderWidth,
+      width: style?.width,
+      maxWidth: style?.maxWidth,
+      minHeight: style?.minHeight as any,
+      textAlign: style?.textAlign as any,
+      fontSize: style?.fontSize,
+      fontWeight: style?.fontWeight as any,
+      position: style?.position,
+      zIndex: style?.zIndex,
+      top: style?.top,
+      right: style?.right,
+      bottom: style?.bottom,
+      left: style?.left,
+      marginTop: margin?.top,
+      marginBottom: margin?.bottom,
+      marginLeft: margin?.left,
+      marginRight: margin?.right,
+      paddingTop: padding?.top,
+      paddingBottom: padding?.bottom,
+      paddingLeft: padding?.left,
+      paddingRight: padding?.right,
+    }
+  }
   return (
     <main className="bg-white">
       {/* טעינת גופנים כמו בבילדר */}
       <link rel="preconnect" href="https://fonts.googleapis.com" />
       <link rel="preconnect" href="https://fonts.gstatic.com" crossOrigin="anonymous" />
       <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Hebrew:wght@300;400;500;700;900&family=Heebo:wght@100;200;300;400;500;600;700;800;900&family=Varela+Round&family=Rubik:wght@300;400;500;700;900&family=Assistant:wght@200;300;400;600;700;800&family=Alef:wght@400;700&family=Secular+One&family=Open+Sans:wght@300;400;600;700&family=Roboto:wght@300;400;500;700;900&family=Inter:wght@300;400;500;600;700;800;900&family=Poppins:wght@300;400;500;600;700;800;900&family=Montserrat:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
-      <div className="mx-auto" style={{ width: '100%', maxWidth: '1140px' }}>
+      <div className="w-full">
         {sections.map((section, si) => (
-          <section key={section.id} className="py-3">
-            <div className="w-full" style={{ maxWidth: section.style?.maxWidth ?? '1140px', margin: '0 auto' }}>
+          <section key={section.id} className="py-3" style={styleToCss(section.style)}>
+            <div className="w-full" style={section.container === 'fixed' ? { maxWidth: '1140px', margin: '0 auto' } : { width: '100%' }}>
               {section.widgets.map((w, idx) => (
                 <div key={w.id} className="py-1">
                   <WidgetRenderer widget={w} sectionId={section.id} index={idx} draggable={false} />
