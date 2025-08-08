@@ -64,7 +64,7 @@ function PreviewApp() {
               width: '100%',
             }}
           >
-            <div className="w-full" style={section.container === 'fixed' ? { maxWidth: '1140px', marginLeft: 'auto', marginRight: 'auto' } : { width: '100%' }}>
+            <div className="w-full" style={(section.style?.maxWidth ?? '1140px') === '100%' ? { width: '100%' } : { maxWidth: section.style?.maxWidth ?? '1140px', marginLeft: 'auto', marginRight: 'auto' }}>
               {section.widgets.map((w, idx) => (
                 <div key={w.id} className="py-1">
                   <WidgetRenderer widget={w} sectionId={section.id} index={idx} draggable={false} />
