@@ -590,7 +590,20 @@ export function Inspector() {
                     theme="snow"
                     value={selectedWidget.type === 'text' ? (selectedWidget.content ?? '') : ''}
                     onChange={(html) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'text') w.content = html })}
-                    modules={{ toolbar: [ [{ align: 'right' }, { align: 'center' }, { align: 'left' }], [{ list: 'bullet' }], ['bold','italic','underline'] ] }}
+                    modules={{
+                      toolbar: {
+                        container: [
+                          ['bold','italic','underline'],
+                          [{ list: 'bullet' }],
+                          [{ align: 'right' }, { align: 'center' }, { align: 'left' }, 'align-left']
+                        ],
+                        handlers: {
+                          'align-left': function(this: any) {
+                            try { this.quill.format('align', 'left', 'user') } catch {}
+                          },
+                        },
+                      },
+                    }}
                     formats={['bold','italic','underline','align','list']}
                     defaultValue={selectedWidget.type === 'text' ? (selectedWidget.content ?? '') : ''}
                   />

@@ -30,6 +30,9 @@ body {
 .ql-align-center { text-align: center; }
 .ql-align-left { text-align: left; }
 .ql-align-justify { text-align: justify; }
+
+/* אייקון מותאם לכלי align-left המותאם אישית */
+.ql-toolbar button.ql-align-left::after { content: '≡'; font-weight: 600; transform: scaleX(-1); display: inline-block; }
 .ql-direction-rtl { direction: rtl; }
 .ql-direction-ltr { direction: ltr; text-align: left; }
 
