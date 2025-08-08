@@ -1282,11 +1282,13 @@ export function Inspector() {
                   <div className="flex flex-wrap items-center gap-3">
                     <NumberInput label="H גודל" value={selectedWidget.headingStyle?.fontSize as any} onChange={(v) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'banner') w.headingStyle = { ...(w.headingStyle ?? {}), fontSize: v } })} />
                     <NumberInput label="H משקל" value={selectedWidget.headingStyle?.fontWeight as any} onChange={(v) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'banner') w.headingStyle = { ...(w.headingStyle ?? {}), fontWeight: v } })} />
+                    <NumberInput label="H גובה שורה" value={selectedWidget.headingStyle?.lineHeight as any} onChange={(v) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'banner') w.headingStyle = { ...(w.headingStyle ?? {}), lineHeight: v } })} />
                     <ColorInput label="H צבע" value={selectedWidget.headingStyle?.color} onChange={(v) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'banner') w.headingStyle = { ...(w.headingStyle ?? {}), color: v } })} />
                   </div>
                   <div className="flex flex-wrap items-center gap-3">
                     <NumberInput label="טקסט גודל" value={selectedWidget.textStyle?.fontSize as any} onChange={(v) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'banner') w.textStyle = { ...(w.textStyle ?? {}), fontSize: v } })} />
                     <NumberInput label="טקסט משקל" value={selectedWidget.textStyle?.fontWeight as any} onChange={(v) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'banner') w.textStyle = { ...(w.textStyle ?? {}), fontWeight: v } })} />
+                    <NumberInput label="טקסט גובה שורה" value={selectedWidget.textStyle?.lineHeight as any} onChange={(v) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'banner') w.textStyle = { ...(w.textStyle ?? {}), lineHeight: v } })} />
                     <ColorInput label="טקסט צבע" value={selectedWidget.textStyle?.color} onChange={(v) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'banner') w.textStyle = { ...(w.textStyle ?? {}), color: v } })} />
                   </div>
                 </div>
