@@ -243,15 +243,16 @@ export function WidgetRenderer({ widget, sectionId, index, draggable = true }: {
             suppressContentEditableWarning
             className="outline-none border border-zinc-300 rounded px-1 leading-7"
             onInput={(e) => {
-              const value = (e.currentTarget as HTMLDivElement).innerText
+              const value = (e.currentTarget as HTMLDivElement).innerHTML
               setEditValue(value)
               updateWidget(widget.id, (w) => { if (w.type === 'text') w.content = value })
             }}
             onBlur={() => { setIsEditing(false); setEditValue(undefined) }}
             onClick={(e) => e.stopPropagation()}
-          >{editValue ?? w.content}</div>
+            dangerouslySetInnerHTML={{ __html: editValue ?? w.content }}
+          />
         ) : (
-          <p className="leading-7" style={{ margin: 0, ...contentTypographyStyle }} onDoubleClick={(e: React.MouseEvent) => { e.stopPropagation(); setEditValue(w.content); setIsEditing(true) }}>{w.content}</p>
+          <div className="leading-7" style={{ margin: 0, ...contentTypographyStyle }} onDoubleClick={(e: React.MouseEvent) => { e.stopPropagation(); setEditValue(w.content); setIsEditing(true) }} dangerouslySetInnerHTML={{ __html: w.content }} />
         ) })()
       )}
       {widget.type === 'button' && (

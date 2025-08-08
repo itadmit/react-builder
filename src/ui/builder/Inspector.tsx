@@ -3,7 +3,7 @@ import type { Widget } from '@/types/builder'
 import { useMemo, useState } from 'react'
 import { Field, TextInput, NumberInputUI, Select, ColorPicker } from '@/ui/controls/Controls'
 import { Accordion } from '@/ui/controls/Accordion'
-import { Type, Link2, Palette, AlignLeft, Eye, EyeOff, TypeIcon, Frame, MoveVertical, MoveHorizontal, Circle, UploadCloud } from 'lucide-react'
+import { Type, Link2, Palette, AlignLeft, AlignCenter, AlignRight, Bold, Italic, Underline, List, Eye, EyeOff, TypeIcon, Frame, MoveVertical, MoveHorizontal, Circle, UploadCloud } from 'lucide-react'
 import { StyleControls } from './StyleControls'
 import { MousePointerSquareDashed, Edit3, Settings2 } from 'lucide-react'
 
@@ -520,17 +520,30 @@ export function Inspector() {
               title: 'טקסט',
               defaultOpen: true,
               children: (
-                <Field label="טקסט" icon={<Type size={14} /> }>
-                    <textarea
-                    className="h-28 rounded-md border px-3 py-2 text-sm bg-white/80 dark:bg-zinc-900/80 focus:outline-none focus:ring-2 focus:ring-[var(--qs-primary)] focus:border-transparent"
-                      value={selectedWidget.type === 'text' ? (selectedWidget.content ?? '') : ''}
-                    onChange={(e) =>
-                      updateWidget(selectedWidget.id, (w) => {
-                        if (w.type === 'text') w.content = e.target.value
-                      })
-                    }
+                <div className="space-y-2">
+                  <div className="flex items-center gap-1 border rounded p-1 bg-white">
+                    <button className="px-2 py-1 hover:bg-zinc-100 rounded" title="מודגש" onClick={() => {
+                      const sel = window.getSelection(); if (!sel || sel.rangeCount === 0) return;
+                      document.execCommand('bold')
+                    }}><Bold size={14} /></button>
+                    <button className="px-2 py-1 hover:bg-zinc-100 rounded" title="נטוי" onClick={() => document.execCommand('italic')}><Italic size={14} /></button>
+                    <button className="px-2 py-1 hover:bg-zinc-100 rounded" title="קו תחתון" onClick={() => document.execCommand('underline')}><Underline size={14} /></button>
+                    <div className="w-px h-5 bg-zinc-200 mx-1" />
+                    <button className="px-2 py-1 hover:bg-zinc-100 rounded" title="יישור ימין" onClick={() => document.execCommand('justifyRight')}><AlignRight size={14} /></button>
+                    <button className="px-2 py-1 hover:bg-zinc-100 rounded" title="יישור מרכז" onClick={() => document.execCommand('justifyCenter')}><AlignCenter size={14} /></button>
+                    <button className="px-2 py-1 hover:bg-zinc-100 rounded" title="יישור שמאל" onClick={() => document.execCommand('justifyLeft')}><AlignLeft size={14} /></button>
+                    <div className="w-px h-5 bg-zinc-200 mx-1" />
+                    <button className="px-2 py-1 hover:bg-zinc-100 rounded" title="רשימה" onClick={() => document.execCommand('insertUnorderedList')}><List size={14} /></button>
+                  </div>
+                  <div
+                    className="min-h-[112px] rounded-md border px-3 py-2 text-sm bg-white/80 dark:bg-zinc-900/80 focus:outline-none"
+                    contentEditable
+                    suppressContentEditableWarning
+                    onInput={(e) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'text') w.content = (e.currentTarget as HTMLDivElement).innerHTML })}
+                    dangerouslySetInnerHTML={{ __html: selectedWidget.type === 'text' ? (selectedWidget.content ?? '') : '' }}
                   />
-                </Field>
+                  <div className="text-[11px] text-zinc-500">אפשר לערוך: מודגש, נטוי, קו תחתון, רשימה, יישור, ירידת שורה (Enter)</div>
+                </div>
               ),
             },
           ]}
