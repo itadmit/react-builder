@@ -98,6 +98,9 @@ export type WidgetCommon = {
   children?: Widget[]
   backgroundImage?: string
   backgroundVideoUrl?: string
+  // מקורות למדיה במובייל
+  backgroundImageMobile?: string
+  backgroundVideoUrlMobile?: string
   overlayColor?: string
   heading?: string
   text?: string
@@ -158,6 +161,8 @@ export type SpacerWidget = WidgetCommon & {
 export type ImageWidget = WidgetCommon & {
   type: 'image'
   src: string
+  // מקור ייעודי למובייל (ברירת מחדל נופל ל-src)
+  mobileSrc?: string
   alt?: string
   linkHref?: string
   objectFit?: 'cover' | 'contain'
@@ -168,6 +173,8 @@ export type ImageWidget = WidgetCommon & {
 export type VideoWidget = WidgetCommon & {
   type: 'video'
   src: string
+  // מקור ייעודי למובייל (ברירת מחדל נופל ל-src)
+  mobileSrc?: string
   autoplay?: boolean
   loop?: boolean
   muted?: boolean

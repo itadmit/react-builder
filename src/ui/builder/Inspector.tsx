@@ -657,12 +657,23 @@ export function Inspector() {
               defaultOpen: true,
               children: (
                 <div className="space-y-2">
-                  <Field label="מקור תמונה">
+                  <Field label="מקור תמונה (דסקטופ)">
                     <TextInput
                       value={selectedWidget.type === 'image' ? (selectedWidget.src ?? '') : ''}
                       onChange={(e) =>
                         updateWidget(selectedWidget.id, (w) => {
                           if (w.type === 'image') w.src = e.target.value
+                        })
+                      }
+                    />
+                  </Field>
+                  <Field label="מקור תמונה (מובייל)">
+                    <TextInput
+                      placeholder="אם ריק – ישתמש במקור הדסקטופ"
+                      value={selectedWidget.type === 'image' ? ((selectedWidget as any).mobileSrc ?? '') : ''}
+                      onChange={(e) =>
+                        updateWidget(selectedWidget.id, (w) => {
+                          if (w.type === 'image') (w as any).mobileSrc = e.target.value || undefined
                         })
                       }
                     />
@@ -758,11 +769,18 @@ export function Inspector() {
               defaultOpen: true,
               children: (
                 <div className="space-y-3">
-                  <Field label="מקור וידאו (MP4)">
+                  <Field label="מקור וידאו (MP4) – דסקטופ">
                     <TextInput
                       placeholder="https://.../video.mp4"
                       value={selectedWidget.type === 'video' ? (selectedWidget.src ?? '') : ''}
                       onChange={(e) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'video') w.src = e.target.value })}
+                    />
+                  </Field>
+                  <Field label="מקור וידאו (MP4) – מובייל">
+                    <TextInput
+                      placeholder="אם ריק – ישתמש במקור הדסקטופ"
+                      value={selectedWidget.type === 'video' ? (((selectedWidget as any).mobileSrc) ?? '') : ''}
+                      onChange={(e) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'video') (w as any).mobileSrc = e.target.value || undefined })}
                     />
                   </Field>
                   <div className="grid grid-cols-2 gap-3">
@@ -1047,9 +1065,9 @@ export function Inspector() {
               id: 'banner-media',
               title: 'מדיה',
               children: (
-                <div className="space-y-3">
-                  <div className="space-y-1">
-                    <div className="text-xs text-zinc-600">תמונת רקע</div>
+                <div className="space-y-4">
+                  <div className="space-y-2">
+                    <div className="text-xs text-zinc-600">תמונת רקע (דסקטופ)</div>
                     <div
                       className="border border-dashed rounded-lg p-4 text-sm text-zinc-500 hover:bg-zinc-50 cursor-pointer flex items-center justify-center gap-2"
                       onClick={() => setMediaModal({ kind: 'image', widgetId: selectedWidget.id })}
@@ -1060,11 +1078,26 @@ export function Inspector() {
                       <div className="text-xs text-zinc-500 break-all">נוכחית: {selectedWidget.backgroundImage}</div>
                     )}
                   </div>
-                  <Field label="וידאו (MP4) - כתובת URL">
+                  <div className="space-y-2">
+                    <div className="text-xs text-zinc-600">תמונת רקע (מובייל)</div>
+                    <TextInput
+                      placeholder="אם ריק – ישתמש בתמונת הדסקטופ"
+                      value={selectedWidget.type === 'banner' ? ((selectedWidget as any).backgroundImageMobile ?? '') : ''}
+                      onChange={(e) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'banner') (w as any).backgroundImageMobile = e.target.value || undefined })}
+                    />
+                  </div>
+                  <Field label="וידאו (MP4) – דסקטופ">
                     <TextInput
                       placeholder="https://.../video.mp4"
                       value={selectedWidget.type === 'banner' ? (selectedWidget.backgroundVideoUrl ?? '') : ''}
                       onChange={(e) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'banner') w.backgroundVideoUrl = e.target.value || undefined })}
+                    />
+                  </Field>
+                  <Field label="וידאו (MP4) – מובייל">
+                    <TextInput
+                      placeholder="אם ריק – ישתמש בוידאו הדסקטופ"
+                      value={selectedWidget.type === 'banner' ? (((selectedWidget as any).backgroundVideoUrlMobile) ?? '') : ''}
+                      onChange={(e) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'banner') (w as any).backgroundVideoUrlMobile = e.target.value || undefined })}
                     />
                   </Field>
                   <div className="text-xs text-zinc-500">אם מולא וידאו, הוא יוצג במקום תמונת הרקע.</div>

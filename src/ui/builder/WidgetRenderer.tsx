@@ -72,12 +72,15 @@ export function WidgetRenderer({ widget, sectionId, index, draggable = true }: {
   const [assetProgress, setAssetProgress] = useState<number>(0)
   // אפס מצב טעינה כשמקור הנכס משתנה
   useEffect(() => {
-    // אתחול טעינה כשנכס משתנה
+    // אתחול טעינה כשנכס משתנה (לוקח בחשבון מובייל/דסקטופ)
+    const currentDevice = useBuilderStore.getState().device
     const key = widget.type === 'image'
-      ? (widget as any).src
+      ? ((currentDevice === 'mobile' && (widget as any).mobileSrc) || (widget as any).src)
       : widget.type === 'banner'
-        ? ((widget as any).backgroundVideoUrl || (widget as any).backgroundImage)
-        : undefined
+        ? ((currentDevice === 'mobile' && ((widget as any).backgroundVideoUrlMobile || (widget as any).backgroundImageMobile)) || (widget as any).backgroundVideoUrl || (widget as any).backgroundImage)
+        : widget.type === 'video'
+          ? ((currentDevice === 'mobile' && (widget as any).mobileSrc) || (widget as any).src)
+          : undefined
     if (!key) {
       setAssetLoaded(true)
       setAssetProgress(0)
@@ -94,7 +97,17 @@ export function WidgetRenderer({ widget, sectionId, index, draggable = true }: {
       }
     }, 200)
     return () => window.clearInterval(interval)
-  }, [widget.type === 'image' ? (widget as any).src : undefined, widget.type === 'banner' ? (widget as any).backgroundImage : undefined, widget.type === 'banner' ? (widget as any).backgroundVideoUrl : undefined])
+  }, [
+    widget.type === 'image' ? (widget as any).src : undefined,
+    widget.type === 'image' ? (widget as any).mobileSrc : undefined,
+    widget.type === 'video' ? (widget as any).src : undefined,
+    widget.type === 'video' ? (widget as any).mobileSrc : undefined,
+    widget.type === 'banner' ? (widget as any).backgroundImage : undefined,
+    widget.type === 'banner' ? (widget as any).backgroundImageMobile : undefined,
+    widget.type === 'banner' ? (widget as any).backgroundVideoUrl : undefined,
+    widget.type === 'banner' ? (widget as any).backgroundVideoUrlMobile : undefined,
+    useBuilderStore.getState().device,
+  ])
 
   if (!widget.visible) return null
 
@@ -268,7 +281,7 @@ export function WidgetRenderer({ widget, sectionId, index, draggable = true }: {
       })()}
       {widget.type === 'spacer' && (() => { const w = widget as Extract<Widget, { type: 'spacer' }>; return <div style={{ height: (typeof w.height === 'number' ? w.height : String(w.height)) }} /> })()}
       {widget.type === 'image' && (
-        (() => { const w = widget as Extract<Widget, { type: 'image' }>; return <figure className="overflow-hidden relative" style={{ borderRadius: effectiveHoverStyle.borderRadius as any, minHeight: assetLoaded ? undefined : 180 }}>
+        (() => { const w = widget as Extract<Widget, { type: 'image' }>; const currentDevice = useBuilderStore.getState().device; const imgSrc = (currentDevice === 'mobile' && (w as any).mobileSrc) ? (w as any).mobileSrc : w.src; return <figure className="overflow-hidden relative" style={{ borderRadius: effectiveHoverStyle.borderRadius as any, minHeight: assetLoaded ? undefined : 180 }}>
           {!assetLoaded && (
             <div className="qs-skeleton">
               <div className="absolute top-2 left-2 rtl:left-auto rtl:right-2 bg-white/70 rounded px-2 py-1 text-[11px] text-zinc-800 font-medium shadow">
@@ -278,7 +291,7 @@ export function WidgetRenderer({ widget, sectionId, index, draggable = true }: {
           )}
           <a href={w.linkHref ?? undefined}>
             <img
-              src={w.src}
+              src={imgSrc}
               alt={w.alt ?? ''}
               loading={w.lazy ? 'lazy' : undefined}
               className="w-full h-auto block"
@@ -291,8 +304,8 @@ export function WidgetRenderer({ widget, sectionId, index, draggable = true }: {
         </figure> })()
       )}
       {widget.type === 'video' && (
-        (() => { const w = widget as Extract<Widget, { type: 'video' }>; return <video
-          src={w.src}
+        (() => { const w = widget as Extract<Widget, { type: 'video' }>; const currentDevice = useBuilderStore.getState().device; const videoSrc = (currentDevice === 'mobile' && (w as any).mobileSrc) ? (w as any).mobileSrc : w.src; return <video
+          src={videoSrc}
           autoPlay={w.autoplay}
           loop={w.loop}
           muted={w.muted}
@@ -408,13 +421,18 @@ export function WidgetRenderer({ widget, sectionId, index, draggable = true }: {
                   </div>
                 </div>
               )}
-              {b.backgroundVideoUrl ? (
-                <video className="absolute inset-0 w-full h-full object-cover" autoPlay muted loop playsInline src={b.backgroundVideoUrl} onLoadedData={() => { setAssetLoaded(true); setAssetProgress(100) }} onError={() => { setAssetLoaded(true); setAssetProgress(100) }} />
-              ) : (
-                b.backgroundImage ? (
-                  <img className="absolute inset-0 w-full h-full object-cover" src={b.backgroundImage} alt="" onLoad={() => { setAssetLoaded(true); setAssetProgress(100) }} onError={() => { setAssetLoaded(true); setAssetProgress(100) }} style={{ opacity: assetLoaded ? 1 : 0, transition: 'opacity 200ms' }} />
-                ) : null
-              )}
+              {(() => {
+                const currentDevice = useBuilderStore.getState().device
+                const videoSrc = currentDevice === 'mobile' ? ((b as any).backgroundVideoUrlMobile || b.backgroundVideoUrl) : b.backgroundVideoUrl
+                const imageSrc = currentDevice === 'mobile' ? ((b as any).backgroundImageMobile || b.backgroundImage) : b.backgroundImage
+                if (videoSrc) {
+                  return <video className="absolute inset-0 w-full h-full object-cover" autoPlay muted loop playsInline src={videoSrc} onLoadedData={() => { setAssetLoaded(true); setAssetProgress(100) }} onError={() => { setAssetLoaded(true); setAssetProgress(100) }} />
+                }
+                if (imageSrc) {
+                  return <img className="absolute inset-0 w-full h-full object-cover" src={imageSrc} alt="" onLoad={() => { setAssetLoaded(true); setAssetProgress(100) }} onError={() => { setAssetLoaded(true); setAssetProgress(100) }} style={{ opacity: assetLoaded ? 1 : 0, transition: 'opacity 200ms' }} />
+                }
+                return null
+              })()}
             </>
           ) })()}
           {(() => { const b = widget as Extract<Widget, { type: 'banner' }>; return b.overlayColor && (
