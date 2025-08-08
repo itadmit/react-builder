@@ -1195,6 +1195,16 @@ export function Inspector() {
                     />
                   </Field>
                   <div className="text-xs text-zinc-500">אם מולא וידאו, הוא יוצג במקום תמונת הרקע.</div>
+                  <Field label="עיגול פינות (px)">
+                    <NumberInputUI
+                      className="w-20 h-8"
+                      value={selectedWidget.style?.borderRadius as any}
+                      onChange={(e) => {
+                        const val = (e.target as HTMLInputElement).value
+                        updateWidget(selectedWidget.id, (w) => { if (w.type === 'banner') w.style = { ...(w.style ?? {}), borderRadius: val === '' ? undefined : Number(val) } })
+                      }}
+                    />
+                  </Field>
                 </div>
               )
             },
