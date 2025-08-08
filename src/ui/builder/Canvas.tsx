@@ -99,7 +99,7 @@ export function Canvas() {
       {(() => {
         const previewWidth = device === 'desktop' ? 1140 : device === 'tablet' ? 820 : 390
         return (
-          <div className="mx-auto bg-white border rounded shadow-sm" style={{ width: '100%', transition: 'width 150ms cubic-bezier(0.2, 0.7, 0.2, 1)' }}>
+          <div className="mx-auto bg-white border rounded shadow-sm" style={{ width: '100%', maxWidth: `${previewWidth * (zoom || 1)}px`, transition: 'width 150ms cubic-bezier(0.2, 0.7, 0.2, 1)' }}>
 
         {page.sections.length === 0 ? (
           <div
