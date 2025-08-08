@@ -1,0 +1,119 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --qs-primary: #111111; /* black */
+  --qs-primary-600: #000000; /* pure black */
+  --qs-accent: #6b7280; /* zinc-500 */
+  --qs-surface: #ffffff;
+  --qs-surface-ghost: rgba(255,255,255,0.7);
+  --qs-outline: #e9d5ff; /* violet-200 - בהיר */
+  --qs-outline-strong: #7c3aed; /* violet-600 - סגול כהה ראשי */
+}
+
+html, body, #root {
+  height: 100%;
+}
+
+body {
+  @apply bg-zinc-50 text-zinc-900 dark:bg-zinc-900 dark:text-zinc-100;
+  font-family: 'Noto Sans Hebrew', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji";
+}
+
+/* Utilities */
+.btn { @apply inline-flex items-center justify-center gap-2 rounded px-3 py-1.5 text-sm transition-colors; }
+.btn-primary { @apply text-white; background: var(--qs-primary); }
+.btn-primary:hover { background: var(--qs-primary-600); }
+.btn-ghost { @apply border; }
+
+.tab { @apply px-3 py-2 text-sm text-zinc-700 transition-colors; border-bottom: 2px solid transparent; }
+.tab:hover { @apply bg-zinc-100; }
+.tab-active { @apply text-zinc-900 bg-zinc-100; border-bottom-color: var(--qs-primary); }
+
+.card { @apply border rounded bg-white dark:bg-zinc-950 shadow-sm; border-radius: 4px; }
+.widget-tile { height: 88px; }
+.widget-tile.dragging { opacity: 0.9; }
+.chip { @apply text-[10px] text-white px-1 rounded; background: #111111; }
+
+.gradient-topbar { background: transparent; }
+.color-field.open .color-popover { display: block; }
+
+/* Panels and settings grouping */
+.panel { @apply bg-zinc-50 dark:bg-zinc-950 h-full shadow-inner; }
+.panel-header { @apply sticky top-0 z-10 bg-white/80 dark:bg-zinc-950/80 backdrop-blur border-b; }
+.settings-group { @apply border p-3 bg-white dark:bg-zinc-950; border-radius: 4px; }
+.settings-title { @apply text-xs font-semibold text-zinc-600 dark:text-zinc-300 mb-2; }
+.settings-row { @apply grid gap-2; }
+.settings-hr { @apply my-3 border-t border-zinc-200 dark:border-zinc-800; }
+
+/* Center canvas column */
+.canvas-column { @apply bg-white h-full border-x border-zinc-200; }
+.canvas-viewport { @apply h-full overflow-auto; }
+
+/* Elementor-like hover outline */
+/* Simplify outlines: use a single consistent border */
+.e-outline { position: relative; }
+.group:hover > .e-outline, .group:hover .e-outline.hoverable { box-shadow: 0 0 0 1px var(--qs-outline-strong) inset; }
+.e-pill {
+  position: absolute;
+  top: -12px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: #000;
+  color: #fff;
+  padding: 4px 8px;
+  border-radius: 9999px;
+  border: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  line-height: 1;
+  font-size: 12px;
+  opacity: 0;
+  transition: opacity .15s ease;
+  z-index: 50;
+}
+.group:hover > .e-pill { opacity: 1; }
+.e-pill button { width: 22px; height: 22px; display:flex; align-items:center; justify-content:center; line-height:1; background: transparent; border-radius: 4px; border: 0; color: #fff; opacity: 0.9; }
+.e-pill button:hover { opacity: 1; }
+.e-pill .ghost { background: transparent; border: 0; }
+
+/* שורה: פלטה סגולה לזיהוי מהיר */
+.section-pill { background: var(--qs-outline-strong); }
+
+.scrollbar-thin::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+.scrollbar-thin::-webkit-scrollbar-thumb {
+  background-color: rgba(0,0,0,0.2);
+  border-radius: 9999px;
+}
+
+@keyframes marquee {
+  0% { transform: translateX(0%); }
+  100% { transform: translateX(-50%); }
+}
+
+/* Skeleton overlay - בולט יותר, עם פסים אלכסוניים ותנועת שימר */
+.qs-skeleton {
+  position: absolute;
+  inset: 0;
+  background: repeating-linear-gradient(
+    45deg,
+    rgba(124, 58, 237, 0.28) 0px,
+    rgba(124, 58, 237, 0.28) 12px,
+    rgba(255, 255, 255, 0.38) 12px,
+    rgba(255, 255, 255, 0.38) 24px
+  );
+  background-size: 200% 100%;
+  animation: qs-skel-move 2.4s linear infinite;
+}
+
+@keyframes qs-skel-move {
+  0% { background-position: 0% 0; }
+  100% { background-position: 100% 0; }
+}
+
+
