@@ -594,6 +594,60 @@ export function Inspector() {
         />
       )}
 
+      {tab === 'general' && selectedWidget.type === 'divider' && (
+        <Accordion
+          items={[
+            {
+              id: 'divider-general',
+              title: 'קו מפריד',
+              defaultOpen: true,
+              children: (
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-3">
+                    <Field label="עובי (px)">
+                      <NumberInputUI
+                        value={selectedWidget.type === 'divider' ? (selectedWidget.style?.borderWidth ?? 1) : 1}
+                        onChange={(e) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'divider') w.style = { ...(w.style ?? {}), borderWidth: Number((e.target as HTMLInputElement).value || 0) } })}
+                      />
+                    </Field>
+                    <Field label="סגנון">
+                      <Select
+                        value={selectedWidget.type === 'divider' ? (selectedWidget.style?.borderStyle ?? 'solid') : 'solid'}
+                        onChange={(e) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'divider') w.style = { ...(w.style ?? {}), borderStyle: e.target.value as any } })}
+                      >
+                        <option value="solid">רגיל</option>
+                        <option value="dashed">מקווקו</option>
+                        <option value="dotted">מנוקד</option>
+                      </Select>
+                    </Field>
+                  </div>
+                  <Field label="צבע">
+                    <ColorPicker
+                      value={selectedWidget.style?.borderColor}
+                      onChange={(v) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'divider') w.style = { ...(w.style ?? {}), borderColor: v } })}
+                    />
+                  </Field>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Field label="מרווח עליון (px)">
+                      <NumberInputUI
+                        value={selectedWidget.style?.margin?.top as any}
+                        onChange={(e) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'divider') w.style = { ...(w.style ?? {}), margin: { ...(w.style?.margin ?? {}), top: Number((e.target as HTMLInputElement).value || 0) } } })}
+                      />
+                    </Field>
+                    <Field label="מרווח תחתון (px)">
+                      <NumberInputUI
+                        value={selectedWidget.style?.margin?.bottom as any}
+                        onChange={(e) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'divider') w.style = { ...(w.style ?? {}), margin: { ...(w.style?.margin ?? {}), bottom: Number((e.target as HTMLInputElement).value || 0) } } })}
+                      />
+                    </Field>
+                  </div>
+                </div>
+              )
+            },
+          ]}
+        />
+      )}
+
       {tab === 'general' && selectedWidget.type === 'image' && (
         <Accordion
           items={[

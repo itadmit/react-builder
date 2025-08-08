@@ -251,7 +251,21 @@ export function WidgetRenderer({ widget, sectionId, index, draggable = true }: {
           <span>{w.label}</span>
         </a> })()
       )}
-      {widget.type === 'divider' && <hr className="border-t border-zinc-200" />}
+      {widget.type === 'divider' && (() => {
+        const s = effectiveHoverStyle
+        return (
+          <hr
+            className="border-0 border-t"
+            style={{
+              borderColor: s.borderColor,
+              borderTopWidth: (s.borderWidth as any) ?? 1,
+              borderStyle: (s.borderStyle as any) ?? 'solid',
+              marginTop: s.margin?.top as any,
+              marginBottom: s.margin?.bottom as any,
+            }}
+          />
+        )
+      })()}
       {widget.type === 'spacer' && (() => { const w = widget as Extract<Widget, { type: 'spacer' }>; return <div style={{ height: (typeof w.height === 'number' ? w.height : String(w.height)) }} /> })()}
       {widget.type === 'image' && (
         (() => { const w = widget as Extract<Widget, { type: 'image' }>; return <figure className="overflow-hidden relative" style={{ borderRadius: effectiveHoverStyle.borderRadius as any, minHeight: assetLoaded ? undefined : 180 }}>
