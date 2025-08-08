@@ -240,23 +240,21 @@ export function WidgetRenderer({ widget, sectionId, index, draggable = true }: {
       )}
       {widget.type === 'text' && (
         (() => { const w = widget as Extract<Widget, { type: 'text' }>; return isEditing && isSelected ? (
-          <div
-            contentEditable
-            suppressContentEditableWarning
-            className="outline-none border border-zinc-300 rounded px-1 leading-7"
-            dir="rtl"
-            style={{ ...contentTypographyStyle, whiteSpace: 'pre-wrap', textAlign: 'right' }}
-            onInput={(e) => {
-              const value = (e.currentTarget as HTMLDivElement).innerHTML
+          <textarea
+            className="outline-none border border-zinc-300 rounded px-2 py-1 leading-7 w-full"
+            dir="auto"
+            style={{ ...contentTypographyStyle, whiteSpace: 'pre-wrap' as any, textAlign: undefined }}
+            value={(editValue ?? w.content)?.replace(/<br\s*\/?>/g, '\n').replace(/<[^>]+>/g, '')}
+            onChange={(e) => {
+              const value = e.currentTarget.value
               setEditValue(value)
-              updateWidget(widget.id, (w) => { if (w.type === 'text') w.content = value })
+              updateWidget(widget.id, (w) => { if (w.type === 'text') w.content = value.replace(/\n/g, '<br/>') })
             }}
             onBlur={() => { setIsEditing(false); setEditValue(undefined) }}
             onClick={(e) => e.stopPropagation()}
-            dangerouslySetInnerHTML={{ __html: editValue ?? w.content }}
           />
         ) : (
-          <div className="leading-7" style={{ margin: 0, ...contentTypographyStyle }} onDoubleClick={(e: React.MouseEvent) => { e.stopPropagation(); setEditValue(w.content); setIsEditing(true) }} dangerouslySetInnerHTML={{ __html: w.content }} />
+          <div className="leading-7" style={{ margin: 0, ...contentTypographyStyle, whiteSpace: 'pre-wrap' }} onDoubleClick={(e: React.MouseEvent) => { e.stopPropagation(); setEditValue(w.content); setIsEditing(true) }}>{(w.content ?? '').replace(/<br\s*\/?>/g, '\n')}</div>
         ) })()
       )}
       {widget.type === 'button' && (

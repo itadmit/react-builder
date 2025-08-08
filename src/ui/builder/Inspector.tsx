@@ -576,24 +576,17 @@ export function Inspector() {
                     <button className="btn btn-ghost" onMouseDown={(e)=>e.preventDefault()} onClick={() => document.execCommand('justifyCenter')}>≡</button>
                     <button className="btn btn-ghost" onMouseDown={(e)=>e.preventDefault()} onClick={() => document.execCommand('justifyLeft')}>⇥</button>
                   </div>
-                  <div
-                    contentEditable
-                    suppressContentEditableWarning
-                    className="outline-none border border-zinc-300 rounded p-2 min-h-[120px]"
-                    dir="rtl"
+                  <textarea
+                    className="outline-none border border-zinc-300 rounded p-2 min-h-[120px] w-full text-sm"
+                    dir="auto"
                     style={{
                       fontFamily: (selectedWidget.responsiveStyle?.[device]?.fontFamily || selectedWidget.style?.fontFamily || 'Noto Sans Hebrew, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial') as string,
-                      fontSize: selectedWidget.responsiveStyle?.[device]?.fontSize || selectedWidget.style?.fontSize,
-                      lineHeight: selectedWidget.responsiveStyle?.[device]?.lineHeight || selectedWidget.style?.lineHeight || 1,
-                      textAlign: (selectedWidget.style?.textAlign as any) || 'right',
-                      unicodeBidi: 'plaintext',
-                      whiteSpace: 'pre-wrap',
+                      fontSize: (selectedWidget.responsiveStyle?.[device]?.fontSize || selectedWidget.style?.fontSize) ? `${selectedWidget.responsiveStyle?.[device]?.fontSize || selectedWidget.style?.fontSize}px` : undefined,
+                      lineHeight: (selectedWidget.responsiveStyle?.[device]?.lineHeight || selectedWidget.style?.lineHeight || 1) as any,
                     }}
-                    onInput={(e) => {
-                      const html = (e.currentTarget as HTMLDivElement).innerHTML
-                      updateWidget(selectedWidget.id, (w) => { if (w.type === 'text') w.content = html })
-                    }}
-                    dangerouslySetInnerHTML={{ __html: selectedWidget.type === 'text' ? (selectedWidget.content ?? '') : '' }}
+                    placeholder="הקלד טקסט..."
+                    value={selectedWidget.type === 'text' ? (selectedWidget.content?.replace(/<br\s*\/?>/g, '\n').replace(/<[^>]+>/g, '') ?? '') : ''}
+                    onChange={(e) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'text') w.content = e.target.value.replace(/\n/g, '<br/>') })}
                   />
                 </div>
               ),
