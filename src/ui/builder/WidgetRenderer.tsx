@@ -216,7 +216,7 @@ export function WidgetRenderer({ widget, sectionId, index, draggable = true }: {
                 suppressContentEditableWarning
                 className="outline-none border border-zinc-300 rounded px-1"
                 dir="auto"
-                style={contentTypographyStyle}
+                style={{ ...contentTypographyStyle, unicodeBidi: 'plaintext', whiteSpace: 'pre-wrap' }}
                 onInput={(e) => {
                   const value = (e.currentTarget as HTMLDivElement).innerText
                   setEditValue(value)
@@ -245,7 +245,7 @@ export function WidgetRenderer({ widget, sectionId, index, draggable = true }: {
             suppressContentEditableWarning
             className="outline-none border border-zinc-300 rounded px-1 leading-7"
             dir="auto"
-            style={contentTypographyStyle}
+            style={{ ...contentTypographyStyle, unicodeBidi: 'plaintext', whiteSpace: 'pre-wrap' }}
             onInput={(e) => {
               const value = (e.currentTarget as HTMLDivElement).innerHTML
               setEditValue(value)

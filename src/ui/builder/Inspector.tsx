@@ -564,6 +564,7 @@ export function Inspector() {
                     }}
                     onKeyUp={() => updateTextToolbarState()}
                     onMouseUp={() => updateTextToolbarState()}
+                    style={{ unicodeBidi: 'plaintext', whiteSpace: 'pre-wrap' }}
                     dangerouslySetInnerHTML={{ __html: selectedWidget.type === 'text' ? (selectedWidget.content ?? '') : '' }}
                   />
                   <div className="text-[11px] text-zinc-500">אפשר לערוך: מודגש, נטוי, קו תחתון, רשימה, יישור, ירידת שורה (Enter)</div>
