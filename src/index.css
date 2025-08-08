@@ -108,7 +108,7 @@ body {
     rgba(255, 255, 255, 0.38) 24px
   );
   background-size: 200% 100%;
-  animation: qs-skel-move 2.4s linear infinite;
+  animation: qs-skel-move 24s linear infinite;
 }
 
 @keyframes qs-skel-move {

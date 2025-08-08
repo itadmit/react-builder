@@ -254,7 +254,7 @@ export function WidgetRenderer({ widget, sectionId, index, draggable = true }: {
       {widget.type === 'divider' && <hr className="border-t border-zinc-200" />}
       {widget.type === 'spacer' && (() => { const w = widget as Extract<Widget, { type: 'spacer' }>; return <div style={{ height: (typeof w.height === 'number' ? w.height : String(w.height)) }} /> })()}
       {widget.type === 'image' && (
-        (() => { const w = widget as Extract<Widget, { type: 'image' }>; return <figure className="overflow-hidden relative" style={{ borderRadius: effectiveHoverStyle.borderRadius as any }}>
+        (() => { const w = widget as Extract<Widget, { type: 'image' }>; return <figure className="overflow-hidden relative" style={{ borderRadius: effectiveHoverStyle.borderRadius as any, minHeight: assetLoaded ? undefined : 180 }}>
           {!assetLoaded && (
             <div className="qs-skeleton">
               <div className="absolute top-2 left-2 rtl:left-auto rtl:right-2 bg-white/70 rounded px-2 py-1 text-[11px] text-zinc-800 font-medium shadow">
