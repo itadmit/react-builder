@@ -242,7 +242,7 @@ export function WidgetRenderer({ widget, sectionId, index, draggable = true }: {
         (() => { const w = widget as Extract<Widget, { type: 'text' }>; return isEditing && isSelected ? (
           <textarea
             className="outline-none border border-zinc-300 rounded px-2 py-1 leading-7 w-full"
-            dir="auto"
+            dir="rtl"
             style={{ ...contentTypographyStyle, whiteSpace: 'pre-wrap' as any, textAlign: undefined }}
             value={(editValue ?? w.content)?.replace(/<br\s*\/?>/g, '\n').replace(/<[^>]+>/g, '')}
             onChange={(e) => {

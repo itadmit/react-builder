@@ -565,24 +565,14 @@ export function Inspector() {
               defaultOpen: true,
               children: (
                 <div className="space-y-2">
-                  <div className="flex items-center gap-2 text-xs">
-                    <button className="btn btn-ghost" onMouseDown={(e)=>e.preventDefault()} onClick={() => document.execCommand('bold')}>B</button>
-                    <button className="btn btn-ghost" onMouseDown={(e)=>e.preventDefault()} onClick={() => document.execCommand('italic')}>I</button>
-                    <button className="btn btn-ghost" onMouseDown={(e)=>e.preventDefault()} onClick={() => document.execCommand('underline')}>U</button>
-                    <div className="mx-2" />
-                    <button className="btn btn-ghost" onMouseDown={(e)=>e.preventDefault()} onClick={() => document.execCommand('insertUnorderedList')}>•</button>
-                    <div className="mx-2" />
-                    <button className="btn btn-ghost" onMouseDown={(e)=>e.preventDefault()} onClick={() => document.execCommand('justifyRight')}>⇤</button>
-                    <button className="btn btn-ghost" onMouseDown={(e)=>e.preventDefault()} onClick={() => document.execCommand('justifyCenter')}>≡</button>
-                    <button className="btn btn-ghost" onMouseDown={(e)=>e.preventDefault()} onClick={() => document.execCommand('justifyLeft')}>⇥</button>
-                  </div>
                   <textarea
                     className="outline-none border border-zinc-300 rounded p-2 min-h-[120px] w-full text-sm"
-                    dir="auto"
+                    dir="rtl"
                     style={{
                       fontFamily: (selectedWidget.responsiveStyle?.[device]?.fontFamily || selectedWidget.style?.fontFamily || 'Noto Sans Hebrew, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial') as string,
                       fontSize: (selectedWidget.responsiveStyle?.[device]?.fontSize || selectedWidget.style?.fontSize) ? `${selectedWidget.responsiveStyle?.[device]?.fontSize || selectedWidget.style?.fontSize}px` : undefined,
                       lineHeight: (selectedWidget.responsiveStyle?.[device]?.lineHeight || selectedWidget.style?.lineHeight || 1) as any,
+                      textAlign: 'right',
                     }}
                     placeholder="הקלד טקסט..."
                     value={selectedWidget.type === 'text' ? (selectedWidget.content?.replace(/<br\s*\/?>/g, '\n').replace(/<[^>]+>/g, '') ?? '') : ''}
