@@ -558,6 +558,10 @@ export function Inspector() {
                     dir="rtl"
                     ref={textEditorRef}
                     onInput={(e) => { updateWidget(selectedWidget.id, (w) => { if (w.type === 'text') w.content = (e.currentTarget as HTMLDivElement).innerHTML }); updateTextToolbarState() }}
+                    onPaste={(e) => {
+                      // לוודא שהדבקות מכבדות RTL
+                      setTimeout(() => updateTextToolbarState(), 0)
+                    }}
                     onKeyUp={() => updateTextToolbarState()}
                     onMouseUp={() => updateTextToolbarState()}
                     dangerouslySetInnerHTML={{ __html: selectedWidget.type === 'text' ? (selectedWidget.content ?? '') : '' }}

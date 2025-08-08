@@ -215,6 +215,7 @@ export function WidgetRenderer({ widget, sectionId, index, draggable = true }: {
                 contentEditable
                 suppressContentEditableWarning
                 className="outline-none border border-zinc-300 rounded px-1"
+                dir="rtl"
                 onInput={(e) => {
                   const value = (e.currentTarget as HTMLDivElement).innerText
                   setEditValue(value)
@@ -242,6 +243,7 @@ export function WidgetRenderer({ widget, sectionId, index, draggable = true }: {
             contentEditable
             suppressContentEditableWarning
             className="outline-none border border-zinc-300 rounded px-1 leading-7"
+            dir="rtl"
             onInput={(e) => {
               const value = (e.currentTarget as HTMLDivElement).innerHTML
               setEditValue(value)
