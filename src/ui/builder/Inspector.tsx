@@ -580,7 +580,7 @@ export function Inspector() {
                     theme="snow"
                     value={selectedWidget.type === 'text' ? (selectedWidget.content ?? '') : ''}
                     onChange={(html) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'text') w.content = html })}
-                    modules={{ toolbar: [ [{ list: 'bullet' }], [{ align: 'right' }, { align: 'center' }, { align: '' }], ['bold','italic','underline'] ] }}
+                    modules={{ toolbar: [ [{ align: 'right' }, { align: 'center' }, { align: '' }], [{ list: 'bullet' }], ['bold','italic','underline'] ] }}
                     formats={['bold','italic','underline','align','list']}
                     defaultValue={selectedWidget.type === 'text' ? (selectedWidget.content ?? '') : ''}
                   />

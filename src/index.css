@@ -1,4 +1,7 @@
-.qs-quill-editor .ql-editor[dir="rtl"], .qs-quill-editor .ql-editor { direction: rtl; text-align: right; }
+.qs-quill-editor .ql-editor[dir="rtl"], .qs-quill-editor .ql-editor { direction: rtl; }
+.qs-quill-editor .ql-editor .ql-align-right { text-align: right !important; }
+.qs-quill-editor .ql-editor .ql-align-center { text-align: center !important; }
+.qs-quill-editor .ql-editor .ql-align-left { text-align: left !important; }
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
