@@ -53,8 +53,18 @@ function PreviewApp() {
       <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+Hebrew:wght@300;400;500;700;900&family=Heebo:wght@100;200;300;400;500;600;700;800;900&family=Varela+Round&family=Rubik:wght@300;400;500;700;900&family=Assistant:wght@200;300;400;600;700;800&family=Alef:wght@400;700&family=Secular+One&family=Open+Sans:wght@300;400;600;700&family=Roboto:wght@300;400;500;700;900&family=Inter:wght@300;400;500;600;700;800;900&family=Poppins:wght@300;400;500;600;700;800;900&family=Montserrat:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
       <div className="w-full">
         {sections.map((section, si) => (
-          <section key={section.id} className="py-3" style={styleToCss(section.style)}>
-            <div className="w-full" style={section.container === 'fixed' ? { maxWidth: '1140px', margin: '0 auto' } : { width: '100%' }}>
+          <section
+            key={section.id}
+            className="py-3"
+            style={{
+              ...styleToCss(section.style),
+              // יישור למרכז כמו בבילדר
+              marginLeft: 'auto',
+              marginRight: 'auto',
+              width: '100%',
+            }}
+          >
+            <div className="w-full" style={section.container === 'fixed' ? { maxWidth: '1140px', marginLeft: 'auto', marginRight: 'auto' } : { width: '100%' }}>
               {section.widgets.map((w, idx) => (
                 <div key={w.id} className="py-1">
                   <WidgetRenderer widget={w} sectionId={section.id} index={idx} draggable={false} />
