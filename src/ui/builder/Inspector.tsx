@@ -695,6 +695,59 @@ export function Inspector() {
         />
       )}
 
+      {tab === 'general' && selectedWidget.type === 'video' && (
+        <Accordion
+          items={[
+            {
+              id: 'video-general',
+              title: 'וידאו',
+              defaultOpen: true,
+              children: (
+                <div className="space-y-3">
+                  <Field label="מקור וידאו (MP4)">
+                    <TextInput
+                      placeholder="https://.../video.mp4"
+                      value={selectedWidget.type === 'video' ? (selectedWidget.src ?? '') : ''}
+                      onChange={(e) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'video') w.src = e.target.value })}
+                    />
+                  </Field>
+                  <div className="grid grid-cols-2 gap-3">
+                    <Field label="הפעלה אוטומטית">
+                      <Checkbox
+                        label="Autoplay"
+                        checked={selectedWidget.type === 'video' ? !!selectedWidget.autoplay : false}
+                        onChange={(v) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'video') w.autoplay = v })}
+                      />
+                    </Field>
+                    <Field label="לולאה">
+                      <Checkbox
+                        label="Loop"
+                        checked={selectedWidget.type === 'video' ? !!selectedWidget.loop : false}
+                        onChange={(v) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'video') w.loop = v })}
+                      />
+                    </Field>
+                    <Field label="השתקה">
+                      <Checkbox
+                        label="Muted"
+                        checked={selectedWidget.type === 'video' ? !!selectedWidget.muted : false}
+                        onChange={(v) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'video') w.muted = v })}
+                      />
+                    </Field>
+                    <Field label="פקדים מובנים">
+                      <Checkbox
+                        label="Controls"
+                        checked={selectedWidget.type === 'video' ? !!selectedWidget.controls : false}
+                        onChange={(v) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'video') w.controls = v })}
+                      />
+                    </Field>
+                  </div>
+                </div>
+              )
+            },
+          ]}
+        />
+      )}
+
       {tab === 'general' && selectedWidget.type === 'spacer' && (
         <Accordion
           items={[
