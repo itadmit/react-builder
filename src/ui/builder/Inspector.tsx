@@ -219,7 +219,7 @@ export function Inspector() {
                     })
                   }}
                 >
-                  <option value="boxed">בוקסד</option>
+                  <option value="boxed">קונטיינר</option>
                   <option value="full">רוחב מלא</option>
                 </Select>
                 <TextInput
@@ -565,12 +565,23 @@ export function Inspector() {
               title: 'טקסט',
               defaultOpen: true,
               children: (
-                <div className="space-y-2">
+                <div className="space-y-2 qs-quill-editor">
+                  {(() => {
+                    const ff = (selectedWidget.responsiveStyle?.[device]?.fontFamily || selectedWidget.style?.fontFamily) as string | undefined
+                    const fs = (selectedWidget.responsiveStyle?.[device]?.fontSize || selectedWidget.style?.fontSize) as number | undefined
+                    const lh = (selectedWidget.responsiveStyle?.[device]?.lineHeight || selectedWidget.style?.lineHeight) as number | undefined
+                    return (
+                      <style>{`.qs-quill-editor .ql-editor { font-family: ${ff ? ff : 'inherit'}; font-size: ${fs ? fs + 'px' : 'inherit'}; line-height: ${lh ? lh : 'inherit'}; }
+                      .qs-quill-editor .ql-container { min-height: 140px; }
+                      .qs-quill-editor { overflow: visible; }`}</style>
+                    )
+                  })()}
                   <ReactQuill
                     theme="snow"
                     value={selectedWidget.type === 'text' ? (selectedWidget.content ?? '') : ''}
                     onChange={(html) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'text') w.content = html })}
-                    modules={{ toolbar: [[{ list: 'bullet' }], [{ align: [] }], ['bold', 'italic', 'underline']] }}
+                    modules={{ toolbar: [ ['bold','italic','underline'], [{ align: '' }, { align: 'center' }, { align: 'right' }], [{ list: 'bullet' }] ] }}
+                    formats={['bold','italic','underline','align','list']}
                   />
                 </div>
               ),
