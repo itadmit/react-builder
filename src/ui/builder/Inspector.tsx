@@ -999,38 +999,90 @@ export function Inspector() {
               id: 'banner-size',
               title: 'גובה',
               children: (
-                <Field label="גובה באנר">
-                  <div className="flex items-center gap-2">
-                    <NumberInputUI
-                      className="w-20 h-8"
-                      value={(() => {
-                        const h = selectedWidget.style?.minHeight as any
-                        if (typeof h === 'string') return Number(String(h).replace(/[^0-9.-]/g,'')) as any
-                        return (h ?? '') as any
-                      })()}
-                      onChange={(e) => {
-                        const raw = (e.target as HTMLInputElement).value
-                        const prev = selectedWidget.style?.minHeight
-                        const unit = typeof prev === 'string' && String(prev).endsWith('vh') ? 'vh' : 'px'
-                        const num = raw === '' ? undefined : Number(raw)
-                        updateWidget(selectedWidget.id, (w) => { if (w.type === 'banner') w.style = { ...(w.style ?? {}), minHeight: num === undefined ? undefined : `${num}${unit}` } })
-                      }}
-                    />
-                    <Select
-                      className="text-xs px-0"
-                      value={typeof selectedWidget.style?.minHeight === 'string' && String(selectedWidget.style?.minHeight).endsWith('vh') ? 'vh' : 'px'}
-                      onChange={(e) => {
-                        const unit = e.target.value
-                        const prev = selectedWidget.style?.minHeight
-                        const num = typeof prev === 'number' ? prev : Number(String(prev ?? '0').replace(/[^0-9.-]/g,''))
-                        updateWidget(selectedWidget.id, (w) => { if (w.type === 'banner') w.style = { ...(w.style ?? {}), minHeight: `${num}${unit}` } })
-                      }}
-                    >
-                      <option value="px">px</option>
-                      <option value="vh">vh</option>
-                    </Select>
-                  </div>
-                </Field>
+                <div className="space-y-3">
+                  <Field label="גובה באנר – דסקטופ">
+                    <div className="flex items-center gap-2">
+                      <NumberInputUI
+                        className="w-20 h-8"
+                        value={(() => {
+                          const h = selectedWidget.style?.minHeight as any
+                          if (typeof h === 'string') return Number(String(h).replace(/[^0-9.-]/g,'')) as any
+                          return (h ?? '') as any
+                        })()}
+                        onChange={(e) => {
+                          const raw = (e.target as HTMLInputElement).value
+                          const prev = selectedWidget.style?.minHeight
+                          const unit = typeof prev === 'string' && String(prev).endsWith('vh') ? 'vh' : 'px'
+                          const num = raw === '' ? undefined : Number(raw)
+                          updateWidget(selectedWidget.id, (w) => { if (w.type === 'banner') w.style = { ...(w.style ?? {}), minHeight: num === undefined ? undefined : `${num}${unit}` } })
+                        }}
+                      />
+                      <Select
+                        className="text-xs px-0"
+                        value={typeof selectedWidget.style?.minHeight === 'string' && String(selectedWidget.style?.minHeight).endsWith('vh') ? 'vh' : 'px'}
+                        onChange={(e) => {
+                          const unit = e.target.value
+                          const prev = selectedWidget.style?.minHeight
+                          const num = typeof prev === 'number' ? prev : Number(String(prev ?? '0').replace(/[^0-9.-]/g,''))
+                          updateWidget(selectedWidget.id, (w) => { if (w.type === 'banner') w.style = { ...(w.style ?? {}), minHeight: `${num}${unit}` } })
+                        }}
+                      >
+                        <option value="px">px</option>
+                        <option value="vh">vh</option>
+                      </Select>
+                    </div>
+                  </Field>
+                  <Field label="גובה באנר – מובייל">
+                    <div className="flex items-center gap-2">
+                      <NumberInputUI
+                        className="w-20 h-8"
+                        value={(() => {
+                          const h = selectedWidget.responsiveStyle?.mobile?.minHeight as any
+                          if (typeof h === 'string') return Number(String(h).replace(/[^0-9.-]/g,'')) as any
+                          return (h ?? '') as any
+                        })()}
+                        onChange={(e) => {
+                          const raw = (e.target as HTMLInputElement).value
+                          const current = selectedWidget.responsiveStyle?.mobile?.minHeight
+                          // יחידה ברירת מחדל לפי ערך קיים במובייל, אחרת לפי דסקטופ
+                          const base = current ?? selectedWidget.style?.minHeight
+                          const unit = typeof base === 'string' && String(base).endsWith('vh') ? 'vh' : 'px'
+                          const num = raw === '' ? undefined : Number(raw)
+                          updateWidget(selectedWidget.id, (w) => {
+                            if (w.type === 'banner') {
+                              const r = { ...(w.responsiveStyle ?? {}) }
+                              r.mobile = { ...(r.mobile ?? {}), minHeight: num === undefined ? undefined : `${num}${unit}` } as any
+                              w.responsiveStyle = r
+                            }
+                          })
+                        }}
+                      />
+                      <Select
+                        className="text-xs px-0"
+                        value={(() => {
+                          const v = selectedWidget.responsiveStyle?.mobile?.minHeight ?? selectedWidget.style?.minHeight
+                          return (typeof v === 'string' && String(v).endsWith('vh')) ? 'vh' : 'px'
+                        })()}
+                        onChange={(e) => {
+                          const unit = e.target.value
+                          const base = selectedWidget.responsiveStyle?.mobile?.minHeight ?? selectedWidget.style?.minHeight
+                          const num = typeof base === 'number' ? base : Number(String(base ?? '0').replace(/[^0-9.-]/g,''))
+                          updateWidget(selectedWidget.id, (w) => {
+                            if (w.type === 'banner') {
+                              const r = { ...(w.responsiveStyle ?? {}) }
+                              r.mobile = { ...(r.mobile ?? {}), minHeight: `${num}${unit}` } as any
+                              w.responsiveStyle = r
+                            }
+                          })
+                        }}
+                      >
+                        <option value="px">px</option>
+                        <option value="vh">vh</option>
+                      </Select>
+                    </div>
+                    <div className="text-[11px] text-zinc-500 mt-1">אם ריק – ישתמש בגובה הדסקטופ</div>
+                  </Field>
+                </div>
               )
             },
             {
