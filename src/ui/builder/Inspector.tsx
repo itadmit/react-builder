@@ -772,51 +772,59 @@ export function Inspector() {
                     </Field>
                   </div>
                   <div className="settings-hr" />
-                  <div className="text-xs text-zinc-600">תמונות</div>
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="flex items-center justify-between">
+                    <div className="text-xs text-zinc-600">תמונות</div>
+                    <button className="btn btn-ghost" onClick={() => updateWidget(selectedWidget.id, (w) => { if (w.type === 'gallery') w.images = [ ...(w.images ?? []), { id: String(Date.now()), src: 'https://picsum.photos/400/300' } as any ] })}>הוסף תמונה</button>
+                  </div>
+                  <div className="space-y-2">
                     {((selectedWidget.type === 'gallery' ? (selectedWidget.images ?? []) : []) as any[]).map((img, idx) => (
-                      <div key={idx} className="border rounded p-1 flex flex-col gap-1">
-                        <img src={img.src} className="w-full h-16 object-cover rounded" />
-                        <TextInput
-                          placeholder="https://..."
-                          value={img.src}
-                          onChange={(e) => updateWidget(selectedWidget.id, (w) => {
-                            if (w.type === 'gallery') {
-                              const arr = [...(w.images ?? [])]
-                              arr[idx] = { ...(arr[idx] ?? {}), src: e.target.value }
-                              w.images = arr as any
-                            }
-                          })}
-                        />
-                        <TextInput
-                          placeholder="Alt (טקסט חלופי)"
-                          value={img.alt ?? ''}
-                          onChange={(e) => updateWidget(selectedWidget.id, (w) => {
-                            if (w.type === 'gallery') {
-                              const arr = [...(w.images ?? [])]
-                              arr[idx] = { ...(arr[idx] ?? {}), alt: e.target.value || undefined }
-                              w.images = arr as any
-                            }
-                          })}
-                        />
-                        <TextInput
-                          placeholder="קישור (לא חובה)"
-                          value={img.linkHref ?? ''}
-                          onChange={(e) => updateWidget(selectedWidget.id, (w) => {
-                            if (w.type === 'gallery') {
-                              const arr = [...(w.images ?? [])]
-                              arr[idx] = { ...(arr[idx] ?? {}), linkHref: e.target.value || undefined }
-                              w.images = arr as any
-                            }
-                          })}
-                        />
-                        <div className="flex gap-1">
-                          <button className="btn btn-ghost" onClick={() => updateWidget(selectedWidget.id, (w) => { if (w.type === 'gallery') { const arr = [...(w.images ?? [])]; arr.splice(idx,1); w.images = arr as any } })}>מחק</button>
-                          <button className="btn btn-ghost" onClick={() => updateWidget(selectedWidget.id, (w) => { if (w.type === 'gallery') { const arr = [...(w.images ?? [])]; arr.splice(idx,0, arr[idx]); w.images = arr as any } })}>שכפל</button>
+                      <div key={idx} className="border rounded p-2 flex items-start gap-2">
+                        <img src={img.src} className="w-16 h-16 object-cover rounded" />
+                        <div className="flex-1 space-y-2">
+                          <TextInput
+                            placeholder="כתובת תמונה (URL)"
+                            value={img.src}
+                            onChange={(e) => updateWidget(selectedWidget.id, (w) => {
+                              if (w.type === 'gallery') {
+                                const arr = [...(w.images ?? [])]
+                                arr[idx] = { ...(arr[idx] ?? {}), src: e.target.value }
+                                w.images = arr as any
+                              }
+                            })}
+                          />
+                          <div className="grid grid-cols-2 gap-2">
+                            <TextInput
+                              placeholder="טקסט חלופי (Alt)"
+                              value={img.alt ?? ''}
+                              onChange={(e) => updateWidget(selectedWidget.id, (w) => {
+                                if (w.type === 'gallery') {
+                                  const arr = [...(w.images ?? [])]
+                                  arr[idx] = { ...(arr[idx] ?? {}), alt: e.target.value || undefined }
+                                  w.images = arr as any
+                                }
+                              })}
+                            />
+                            <TextInput
+                              placeholder="קישור (לא חובה)"
+                              value={img.linkHref ?? ''}
+                              onChange={(e) => updateWidget(selectedWidget.id, (w) => {
+                                if (w.type === 'gallery') {
+                                  const arr = [...(w.images ?? [])]
+                                  arr[idx] = { ...(arr[idx] ?? {}), linkHref: e.target.value || undefined }
+                                  w.images = arr as any
+                                }
+                              })}
+                            />
+                          </div>
+                          <div className="flex flex-wrap gap-2">
+                            <button className="btn btn-ghost" onClick={() => updateWidget(selectedWidget.id, (w) => { if (w.type === 'gallery') { const arr = [ ...(w.images ?? []) ]; if (idx > 0) { const tmp = arr[idx-1]; arr[idx-1] = arr[idx]; arr[idx] = tmp; } w.images = arr as any } })}>מעלה</button>
+                            <button className="btn btn-ghost" onClick={() => updateWidget(selectedWidget.id, (w) => { if (w.type === 'gallery') { const arr = [ ...(w.images ?? []) ]; if (idx < arr.length-1) { const tmp = arr[idx+1]; arr[idx+1] = arr[idx]; arr[idx] = tmp; } w.images = arr as any } })}>מוריד</button>
+                            <button className="btn btn-ghost" onClick={() => updateWidget(selectedWidget.id, (w) => { if (w.type === 'gallery') { const arr = [...(w.images ?? [])]; arr.splice(idx,0, { ...(arr[idx] ?? {}), id: String(Date.now()) }); w.images = arr as any } })}>שכפל</button>
+                            <button className="btn btn-ghost" onClick={() => updateWidget(selectedWidget.id, (w) => { if (w.type === 'gallery') { const arr = [...(w.images ?? [])]; arr.splice(idx,1); w.images = arr as any } })}>מחק</button>
+                          </div>
                         </div>
                       </div>
                     ))}
-                    <button className="border rounded p-3 text-xs text-zinc-600 hover:bg-zinc-50" onClick={() => updateWidget(selectedWidget.id, (w) => { if (w.type === 'gallery') w.images = [ ...(w.images ?? []), { id: String(Date.now()), src: 'https://picsum.photos/400/300' } as any ] })}>הוסף תמונה</button>
                   </div>
                 </div>
               )
