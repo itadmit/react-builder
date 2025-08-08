@@ -324,9 +324,10 @@ export function WidgetRenderer({ widget, sectionId, index, draggable = true }: {
               const cont = widget as Extract<Widget, { type: 'container' }>
               const [colOver, setColOver] = useState<number | null>(null)
               const [afterIndex, setAfterIndex] = useState<number>(-1)
+              const currentColumns = cont.responsiveColumns?.[device] || cont.columns
               return (
-                <div className="grid" style={{ gridTemplateColumns: `repeat(${cont.columns}, minmax(0, 1fr))`, gap: cont.flex?.gap ?? 16 }}>
-                  {Array.from({ length: cont.columns as number }).map((_, colIdx) => (
+                <div className="grid" style={{ gridTemplateColumns: `repeat(${currentColumns}, minmax(0, 1fr))`, gap: cont.flex?.gap ?? 16 }}>
+                  {Array.from({ length: (currentColumns as number) }).map((_, colIdx) => (
                     <div
                       key={colIdx}
                       className={`min-h-[40px] rounded ${draggable ? 'border border-dashed p-1' : ''} ${draggable && colOver === colIdx ? 'border-[var(--qs-outline-strong)]' : ''}`}

@@ -94,6 +94,7 @@ export type WidgetCommon = {
   columns?: number
   gap?: number
   columnsChildren?: Widget[][]
+  responsiveColumns?: Partial<Record<DeviceBreakpoint, number>>
   children?: Widget[]
   backgroundImage?: string
   backgroundVideoUrl?: string

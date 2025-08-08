@@ -1116,6 +1116,35 @@ export function Inspector() {
                       }}
                     />
                   </Field>
+                  <div className="grid grid-cols-3 gap-2">
+                    <Field label="עמודות - דסקטופ">
+                      <NumberInputUI
+                        value={selectedWidget.responsiveColumns?.desktop ?? selectedWidget.columns ?? 2}
+                        onChange={(e) => {
+                          const num = Number((e.target as HTMLInputElement).value || 0)
+                          updateWidget(selectedWidget.id, (w) => { if (w.type === 'container') { w.responsiveColumns = { ...(w.responsiveColumns ?? {}), desktop: num } } })
+                        }}
+                      />
+                    </Field>
+                    <Field label="עמודות - טאבלט">
+                      <NumberInputUI
+                        value={selectedWidget.responsiveColumns?.tablet ?? '' as any}
+                        onChange={(e) => {
+                          const num = Number((e.target as HTMLInputElement).value || 0)
+                          updateWidget(selectedWidget.id, (w) => { if (w.type === 'container') { w.responsiveColumns = { ...(w.responsiveColumns ?? {}), tablet: num } } })
+                        }}
+                      />
+                    </Field>
+                    <Field label="עמודות - מובייל">
+                      <NumberInputUI
+                        value={selectedWidget.responsiveColumns?.mobile ?? 1 as any}
+                        onChange={(e) => {
+                          const num = Number((e.target as HTMLInputElement).value || 0)
+                          updateWidget(selectedWidget.id, (w) => { if (w.type === 'container') { w.responsiveColumns = { ...(w.responsiveColumns ?? {}), mobile: num } } })
+                        }}
+                      />
+                    </Field>
+                  </div>
                 </div>
               )
             },
