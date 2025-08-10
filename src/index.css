@@ -54,7 +54,7 @@ body {
 .chip { @apply text-[10px] text-white px-1 rounded; background: #111111; }
 
 .gradient-topbar { background: transparent; }
-.color-field.open .color-popover { display: block; }
+.color-field.open .color-popover { display: block; z-index: 9999; }
 
 /* Panels and settings grouping */
 .panel { @apply bg-zinc-50 dark:bg-zinc-950 h-full shadow-inner; }

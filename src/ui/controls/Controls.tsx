@@ -106,7 +106,7 @@ export function ColorPicker({ value, onChange }: { value?: string; onChange: (v?
     <div className="flex items-center gap-2">
       <div ref={ref} className={`relative color-field ${open ? 'open' : ''}`}>
         <button type="button" className="h-9 w-9 rounded-md border cursor-pointer" style={swatchBg} onClick={() => setOpen((v) => !v)} />
-        <div className="color-popover absolute z-10 mt-2 p-2 bg-white border rounded shadow-md hidden">
+        <div className="color-popover absolute z-50 mt-2 p-2 bg-white border rounded shadow-md hidden">
           <div className="mb-2 flex items-center justify-between">
             <span className="text-[11px] text-zinc-600">כולל שקיפות</span>
             <button className="text-[11px] underline" onClick={() => onChange('rgba(0,0,0,0)')}>שקוף</button>
