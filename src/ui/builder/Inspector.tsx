@@ -1826,65 +1826,113 @@ export function Inspector() {
       )}
 
       {tab === 'style' && selectedWidget.type === 'banner' && (
-        <Accordion
-          items={[
-            {
-              id: 'banner-style-base',
-              title: 'עיצוב כללי',
-              defaultOpen: true,
-              children: (
-                <StyleControls
-                  widget={selectedWidget}
-                  device={device}
-                  onUpdate={(fn) => updateWidget(selectedWidget.id, fn)}
-                />
-              )
-            },
-            {
-              id: 'banner-style-typography',
-              title: 'טיפוגרפיה',
-              children: (
-                <div className="space-y-3">
-                  <div className="flex flex-wrap items-center gap-3">
-                    <NumberInput label="H גודל" value={selectedWidget.headingStyle?.fontSize as any} onChange={(v) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'banner') w.headingStyle = { ...(w.headingStyle ?? {}), fontSize: v } })} />
-                    <NumberInput label="H משקל" value={selectedWidget.headingStyle?.fontWeight as any} onChange={(v) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'banner') w.headingStyle = { ...(w.headingStyle ?? {}), fontWeight: v } })} />
-                    <NumberInput label="H גובה שורה" value={selectedWidget.headingStyle?.lineHeight as any} onChange={(v) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'banner') w.headingStyle = { ...(w.headingStyle ?? {}), lineHeight: v } })} />
-                    <ColorInput label="H צבע" value={selectedWidget.headingStyle?.color} onChange={(v) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'banner') w.headingStyle = { ...(w.headingStyle ?? {}), color: v } })} />
-                  </div>
-                  <div className="flex flex-wrap items-center gap-3">
-                    <NumberInput label="טקסט גודל" value={selectedWidget.textStyle?.fontSize as any} onChange={(v) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'banner') w.textStyle = { ...(w.textStyle ?? {}), fontSize: v } })} />
-                    <NumberInput label="טקסט משקל" value={selectedWidget.textStyle?.fontWeight as any} onChange={(v) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'banner') w.textStyle = { ...(w.textStyle ?? {}), fontWeight: v } })} />
-                    <NumberInput label="טקסט גובה שורה" value={selectedWidget.textStyle?.lineHeight as any} onChange={(v) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'banner') w.textStyle = { ...(w.textStyle ?? {}), lineHeight: v } })} />
-                    <ColorInput label="טקסט צבע" value={selectedWidget.textStyle?.color} onChange={(v) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'banner') w.textStyle = { ...(w.textStyle ?? {}), color: v } })} />
-                  </div>
-                  <div className="flex flex-wrap items-center gap-3">
-                    <NumberInput label="כפתור גודל" value={selectedWidget.buttonStyle?.fontSize as any} onChange={(v) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'banner') w.buttonStyle = { ...(w.buttonStyle ?? {}), fontSize: v } })} />
-                    <NumberInput label="כפתור משקל" value={selectedWidget.buttonStyle?.fontWeight as any} onChange={(v) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'banner') w.buttonStyle = { ...(w.buttonStyle ?? {}), fontWeight: v } })} />
-                    <NumberInput label="כפתור גובה שורה" value={selectedWidget.buttonStyle?.lineHeight as any} onChange={(v) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'banner') w.buttonStyle = { ...(w.buttonStyle ?? {}), lineHeight: v } })} />
-                    <NumberInput label="כפתור ריווח אותיות" value={selectedWidget.buttonStyle?.letterSpacing as any} onChange={(v) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'banner') w.buttonStyle = { ...(w.buttonStyle ?? {}), letterSpacing: v } })} />
-                  </div>
+        <div className="space-y-6">
+          {/* גודל ומיקום */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold text-zinc-800 flex items-center gap-2">
+              <Frame size={16} />
+              גודל ומיקום
+            </h3>
+            <div className="bg-zinc-50 rounded-lg p-4 space-y-3">
+              <StyleControls
+                widget={selectedWidget}
+                device={device}
+                onUpdate={(fn) => updateWidget(selectedWidget.id, fn)}
+              />
+            </div>
+          </div>
+
+          {/* טיפוגרפיה */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold text-zinc-800 flex items-center gap-2">
+              <Type size={16} />
+              טיפוגרפיה
+            </h3>
+            <div className="bg-zinc-50 rounded-lg p-4 space-y-4">
+              {/* כותרת */}
+              <div className="space-y-2">
+                <div className="text-xs font-medium text-zinc-600 uppercase tracking-wide">כותרת</div>
+                <div className="grid grid-cols-2 gap-3">
+                  <NumberInput label="גודל" value={selectedWidget.headingStyle?.fontSize as any} onChange={(v) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'banner') w.headingStyle = { ...(w.headingStyle ?? {}), fontSize: v } })} />
+                  <NumberInput label="משקל" value={selectedWidget.headingStyle?.fontWeight as any} onChange={(v) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'banner') w.headingStyle = { ...(w.headingStyle ?? {}), fontWeight: v } })} />
                 </div>
-              )
-            },
-            {
-              id: 'banner-style-colors',
-              title: 'צבעים וכפתור',
-              children: (
-                <div className="space-y-3">
-                  <div className="grid grid-cols-2 gap-3">
-                    <ColorInput label="Overlay (החשכה)" value={selectedWidget.overlayColor} onChange={(v) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'banner') w.overlayColor = v })} />
-                    <NumberInput label="שקיפות (0-1)" value={Number(String(selectedWidget.overlayColor?.match(/rgba\(0,0,0,(.*)\)/)?.[1] ?? '0.6'))}
-                      onChange={(v) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'banner') { const alpha = typeof v === 'number' ? v : 0.6; w.overlayColor = `rgba(0,0,0,${alpha})` } })} />
-                  </div>
-                  <ColorInput label="כפתור רקע" value={selectedWidget.buttonStyle?.background} onChange={(v) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'banner') w.buttonStyle = { ...(w.buttonStyle ?? {}), background: v } })} />
-                  <ColorInput label="כפתור טקסט" value={selectedWidget.buttonStyle?.color} onChange={(v) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'banner') w.buttonStyle = { ...(w.buttonStyle ?? {}), color: v } })} />
-                  <ColorInput label="Hover רקע" value={selectedWidget.buttonHoverStyle?.background} onChange={(v) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'banner') w.buttonHoverStyle = { ...(w.buttonHoverStyle ?? {}), background: v } })} />
-                  <ColorInput label="Hover טקסט" value={selectedWidget.buttonHoverStyle?.color} onChange={(v) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'banner') w.buttonHoverStyle = { ...(w.buttonHoverStyle ?? {}), color: v } })} />
+                <div className="grid grid-cols-2 gap-3">
+                  <NumberInput label="גובה שורה" value={selectedWidget.headingStyle?.lineHeight as any} onChange={(v) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'banner') w.headingStyle = { ...(w.headingStyle ?? {}), lineHeight: v } })} />
+                  <ColorInput label="צבע" value={selectedWidget.headingStyle?.color} onChange={(v) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'banner') w.headingStyle = { ...(w.headingStyle ?? {}), color: v } })} />
                 </div>
-              )
-            }
-          ]}
-        />
+              </div>
+              
+              <div className="border-t border-zinc-200" />
+              
+              {/* תת כותרת */}
+              <div className="space-y-2">
+                <div className="text-xs font-medium text-zinc-600 uppercase tracking-wide">תת כותרת</div>
+                <div className="grid grid-cols-2 gap-3">
+                  <NumberInput label="גודל" value={selectedWidget.textStyle?.fontSize as any} onChange={(v) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'banner') w.textStyle = { ...(w.textStyle ?? {}), fontSize: v } })} />
+                  <NumberInput label="משקל" value={selectedWidget.textStyle?.fontWeight as any} onChange={(v) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'banner') w.textStyle = { ...(w.textStyle ?? {}), fontWeight: v } })} />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <NumberInput label="גובה שורה" value={selectedWidget.textStyle?.lineHeight as any} onChange={(v) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'banner') w.textStyle = { ...(w.textStyle ?? {}), lineHeight: v } })} />
+                  <ColorInput label="צבע" value={selectedWidget.textStyle?.color} onChange={(v) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'banner') w.textStyle = { ...(w.textStyle ?? {}), color: v } })} />
+                </div>
+              </div>
+              
+              <div className="border-t border-zinc-200" />
+              
+              {/* כפתור */}
+              <div className="space-y-2">
+                <div className="text-xs font-medium text-zinc-600 uppercase tracking-wide">כפתור</div>
+                <div className="grid grid-cols-2 gap-3">
+                  <NumberInput label="גודל" value={selectedWidget.buttonStyle?.fontSize as any} onChange={(v) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'banner') w.buttonStyle = { ...(w.buttonStyle ?? {}), fontSize: v } })} />
+                  <NumberInput label="משקל" value={selectedWidget.buttonStyle?.fontWeight as any} onChange={(v) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'banner') w.buttonStyle = { ...(w.buttonStyle ?? {}), fontWeight: v } })} />
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <NumberInput label="גובה שורה" value={selectedWidget.buttonStyle?.lineHeight as any} onChange={(v) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'banner') w.buttonStyle = { ...(w.buttonStyle ?? {}), lineHeight: v } })} />
+                  <NumberInput label="ריווח אותיות" value={selectedWidget.buttonStyle?.letterSpacing as any} onChange={(v) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'banner') w.buttonStyle = { ...(w.buttonStyle ?? {}), letterSpacing: v } })} />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* צבעים ואפקטים */}
+          <div className="space-y-4">
+            <h3 className="text-sm font-semibold text-zinc-800 flex items-center gap-2">
+              <Palette size={16} />
+              צבעים ואפקטים
+            </h3>
+            <div className="bg-zinc-50 rounded-lg p-4 space-y-4">
+              {/* רקע והחשכה */}
+              <div className="space-y-3">
+                <div className="text-xs font-medium text-zinc-600 uppercase tracking-wide">רקע</div>
+                <div className="grid grid-cols-2 gap-3">
+                  <ColorInput label="החשכה" value={selectedWidget.overlayColor} onChange={(v) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'banner') w.overlayColor = v })} />
+                  <NumberInput label="עוצמה (0-1)" value={Number(String(selectedWidget.overlayColor?.match(/rgba\(0,0,0,(.*)\)/)?.[1] ?? '0.6'))}
+                    onChange={(v) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'banner') { const alpha = typeof v === 'number' ? v : 0.6; w.overlayColor = `rgba(0,0,0,${alpha})` } })} />
+                </div>
+              </div>
+              
+              <div className="border-t border-zinc-200" />
+              
+              {/* כפתור - רגיל */}
+              <div className="space-y-3">
+                <div className="text-xs font-medium text-zinc-600 uppercase tracking-wide">כפתור - רגיל</div>
+                <div className="grid grid-cols-2 gap-3">
+                  <ColorInput label="רקע" value={selectedWidget.buttonStyle?.background} onChange={(v) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'banner') w.buttonStyle = { ...(w.buttonStyle ?? {}), background: v } })} />
+                  <ColorInput label="טקסט" value={selectedWidget.buttonStyle?.color} onChange={(v) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'banner') w.buttonStyle = { ...(w.buttonStyle ?? {}), color: v } })} />
+                </div>
+              </div>
+              
+              {/* כפתור - Hover */}
+              <div className="space-y-3">
+                <div className="text-xs font-medium text-zinc-600 uppercase tracking-wide">כפתור - ריחוף</div>
+                <div className="grid grid-cols-2 gap-3">
+                  <ColorInput label="רקע" value={selectedWidget.buttonHoverStyle?.background} onChange={(v) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'banner') w.buttonHoverStyle = { ...(w.buttonHoverStyle ?? {}), background: v } })} />
+                  <ColorInput label="טקסט" value={selectedWidget.buttonHoverStyle?.color} onChange={(v) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'banner') w.buttonHoverStyle = { ...(w.buttonHoverStyle ?? {}), color: v } })} />
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
       {/* מתקדם */}
