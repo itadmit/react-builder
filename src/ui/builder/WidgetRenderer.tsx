@@ -880,16 +880,24 @@ function ProductSliderView({ widget, device }: { widget: Extract<Widget, { type:
             })}
           </div>
         </div>
-        {widget.arrows && (
-          <>
-            <button className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 rounded px-2 py-1" onClick={() => setPage((p) => Math.max(0, p - 1))}>
-              ‹
-            </button>
-            <button className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 rounded px-2 py-1" onClick={() => setPage((p) => Math.min(pageCount - 1, p + 1))}>
-              ›
-            </button>
-          </>
-        )}
+        {widget.arrows && (() => {
+          const isRTL = typeof document !== 'undefined' && (document.dir === 'rtl' || document.documentElement.dir === 'rtl')
+          const prev = () => setPage((p) => Math.max(0, p - 1))
+          const next = () => setPage((p) => Math.min(pageCount - 1, p + 1))
+          // במצב RTL: המשמעות של חץ שמאל/ימין מתהפכת לציפיית המשתמש
+          const leftClick = isRTL ? next : prev
+          const rightClick = isRTL ? prev : next
+          return (
+            <>
+              <button className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 rounded px-2 py-1 z-10" onClick={leftClick}>
+                ‹
+              </button>
+              <button className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 rounded px-2 py-1 z-10" onClick={rightClick}>
+                ›
+              </button>
+            </>
+          )
+        })()}
       </div>
       {widget.dots && (
         <div className="flex gap-1 justify-center mt-2">
