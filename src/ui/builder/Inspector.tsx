@@ -1254,17 +1254,31 @@ export function Inspector() {
                   <Field label="קטגוריה">
                     <Select
                       value={selectedWidget.type === 'productSlider' ? String((selectedWidget as any).categoryId ?? '') : ''}
-                      onFocus={(e) => { /* lazy fetch categories */ (async () => {
-                        const slug = useBuilderStore.getState().storeSlug || (window as any).__BUILDER_BOOTSTRAP__?.storeSlug || (window as any).__PREVIEW_BOOTSTRAP__?.storeSlug || (window as any).STORE_DATA?.slug
-                        if (!(window as any).__QS_CATEGORIES__ && slug) {
-                          try { const res = await fetch(`/api/stores/${slug}/categories`, { credentials: 'include' }); const data = await res.json(); (window as any).__QS_CATEGORIES__ = Array.isArray(data?.data) ? data.data : (Array.isArray(data) ? data : []); } catch {}
-                        }
-                        const el = e.currentTarget as HTMLSelectElement
-                        const cats = (window as any).__QS_CATEGORIES__ as any[] | undefined
-                        if (cats && el.children.length <= 1) {
-                          cats.forEach((c:any) => { const opt = document.createElement('option'); opt.value = String(c.id || c.slug || c.name); opt.textContent = c.name || String(c.slug || c.id); el.appendChild(opt) })
-                        }
-                      })() }}
+                      onFocus={(e) => {
+                        const el = e.currentTarget as HTMLSelectElement // לשמור לפני await
+                        ;(async () => {
+                          try {
+                            const slug = useBuilderStore.getState().storeSlug || (window as any).__BUILDER_BOOTSTRAP__?.storeSlug || (window as any).__PREVIEW_BOOTSTRAP__?.storeSlug || (window as any).STORE_DATA?.slug
+                            if (!(window as any).__QS_CATEGORIES__ && slug) {
+                              const res = await fetch(`/api/stores/${slug}/categories`, { credentials: 'include' })
+                              const data = await res.json()
+                              ;(window as any).__QS_CATEGORIES__ = Array.isArray(data?.data) ? data.data : (Array.isArray(data) ? data : [])
+                            }
+                            const cats = ((window as any).__QS_CATEGORIES__ as any[]) || []
+                            if (!el) return
+                            if (el.options.length <= 1) {
+                              cats.forEach((c:any) => {
+                                const opt = document.createElement('option')
+                                opt.value = String(c.id || c.slug || c.name)
+                                opt.textContent = c.name || String(c.slug || c.id)
+                                el.appendChild(opt)
+                              })
+                            }
+                          } catch (err) {
+                            console.error('load categories failed', err)
+                          }
+                        })()
+                      }}
                       onChange={(e) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'productSlider') (w as any).categoryId = e.target.value || undefined })}
                     >
                       <option value="">— בחר קטגוריה —</option>

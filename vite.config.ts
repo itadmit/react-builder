@@ -28,9 +28,9 @@ export default defineConfig(({ mode }) => ({
       output: {
         // שמירה על שמות קבועים לקבצי כניסה לשילוב ב-PHP
         entryFileNames: '[name].js',
-        // קבצי chunks פנימיים יקבלו hash כדי למנוע שגיאות קאש בין גרסאות
-        chunkFileNames: 'chunks/[name]-[hash].js',
-        assetFileNames: 'assets/[name]-[hash][extname]',
+        // חזרה למבנה הישן: ללא תקיות נוספות
+        chunkFileNames: '[name].js',
+        assetFileNames: '[name][extname]',
       },
     },
   },
