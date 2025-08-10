@@ -1,6 +1,12 @@
 import React, { useEffect, useRef, useState } from 'react'
 import { RgbaStringColorPicker } from 'react-colorful'
 
+// ייבוא קומפוננטות מדיה
+export { MediaUploader, useMediaUpload, UploadError } from './MediaUploader'
+export type { UploadedFile, MediaUploaderProps } from './MediaUploader'
+export { MediaModal, useMediaModal } from './MediaModal'
+export type { MediaModalProps } from './MediaModal'
+
 export function Field({ label, children, helper, icon }: { label: string; children: React.ReactNode; helper?: string; icon?: React.ReactNode }) {
   return (
     <label className="text-sm grid gap-1">

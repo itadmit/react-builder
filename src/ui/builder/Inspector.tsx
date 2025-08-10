@@ -2,9 +2,9 @@ import { useBuilderStore } from '@/store/useBuilderStore'
 import type { Widget } from '@/types/builder'
 import { useMemo, useState, useRef } from 'react'
 // הוסר ReactQuill/Quill – חוזרים לעורך בסיסי
-import { Field, TextInput, NumberInputUI, Select, ColorPicker } from '@/ui/controls/Controls'
+import { Field, TextInput, NumberInputUI, Select, ColorPicker, MediaUploader, UploadError, useMediaModal } from '@/ui/controls/Controls'
 import { Accordion } from '@/ui/controls/Accordion'
-import { Type, Link2, Palette, AlignLeft, AlignCenter, AlignRight, Bold, Italic, Underline, List, Eye, EyeOff, TypeIcon, Frame, MoveVertical, MoveHorizontal, Circle, UploadCloud, Square, ArrowUp, ArrowRight, ArrowDown, ArrowLeft } from 'lucide-react'
+import { Type, Link2, Palette, AlignLeft, AlignCenter, AlignRight, Bold, Italic, Underline, List, Eye, EyeOff, TypeIcon, Frame, MoveVertical, MoveHorizontal, Circle, UploadCloud, Square, ArrowUp, ArrowRight, ArrowDown, ArrowLeft, Video, Image } from 'lucide-react'
 import { StyleControls } from './StyleControls'
 import { MousePointerSquareDashed, Edit3, Settings2 } from 'lucide-react'
 
@@ -127,6 +127,9 @@ export function Inspector() {
   const textEditorRef = useRef<HTMLDivElement | null>(null)
   const [textDir, setTextDir] = useState<'auto' | 'rtl' | 'ltr'>('auto')
   const [textFmt, setTextFmt] = useState<{ bold: boolean; italic: boolean; underline: boolean; align: 'left' | 'center' | 'right'; list: boolean }>({ bold: false, italic: false, underline: false, align: 'right', list: false })
+  
+  // מודל מדיה
+  const { openModal, Modal } = useMediaModal()
 
   function detectDir(text: string): 'auto' | 'rtl' | 'ltr' {
     const rtlRange = /[\u0590-\u05FF\u0600-\u06FF]/
@@ -935,26 +938,219 @@ export function Inspector() {
               children: (
                 <div className="space-y-2">
                   <Field label="מקור תמונה (דסקטופ)">
-                    <TextInput
-                      value={selectedWidget.type === 'image' ? (selectedWidget.src ?? '') : ''}
-                      onChange={(e) =>
-                        updateWidget(selectedWidget.id, (w) => {
-                          if (w.type === 'image') w.src = e.target.value
-                        })
-                      }
-                    />
+                    <div className="space-y-3">
+                      {/* תצוגה מקדימה */}
+                      {selectedWidget.type === 'image' && selectedWidget.src && (
+                        <div className="relative">
+                         
+                          <div 
+                            className="relative border rounded-lg overflow-hidden bg-zinc-50 w-full h-48 flex items-center justify-center cursor-pointer hover:border-blue-400 transition-colors" 
+                            onClick={(e) => {
+                              e.preventDefault()
+                              e.stopPropagation()
+                              openModal({
+                                onSelect: (file) => {
+                                  updateWidget(selectedWidget.id, (w) => {
+                                    if (w.type === 'image') w.src = file.url
+                                  })
+                                },
+                                storeSlug: useBuilderStore.getState().storeSlug || 'demo',
+                                title: 'בחר תמונה',
+                                type: 'image',
+                                currentImageUrl: (useBuilderStore.getState().storeSlug && useBuilderStore.getState().storeSlug !== 'demo') 
+                                  ? selectedWidget.src 
+                                  : undefined // במצב demo זה לא יעבוד, אז נתחיל בטאב העלאה
+                              })
+                            }}
+                          >
+                            <img 
+                              src={selectedWidget.src} 
+                              alt="תצוגה מקדימה"
+                              className="max-w-full max-h-full object-contain pointer-events-none"
+                              onClick={(e) => {
+                                e.preventDefault()
+                                e.stopPropagation()
+                                // לחיצה על התמונה לא עושה כלום!
+                              }}
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement
+                                target.style.display = 'none'
+                                const parent = target.parentElement
+                                if (parent) {
+                                  parent.innerHTML = '<div class="flex items-center justify-center h-24 text-zinc-400 text-sm">שגיאה בטעינת התמונה</div>'
+                                }
+                              }}
+                            />
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                updateWidget(selectedWidget.id, (w) => {
+                                  if (w.type === 'image') w.src = ''
+                                })
+                              }}
+                              className="absolute top-2 right-2 w-6 h-6 bg-red-500 text-white rounded-full text-xs hover:bg-red-600 flex items-center justify-center"
+                              title="מחק תמונה"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* כפתור פתיחת מודל מדיה */}
+                      <button
+                        type="button"
+                        className="w-full flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-zinc-300 rounded-lg text-zinc-600 hover:border-zinc-400 hover:text-zinc-700 hover:bg-zinc-50 transition-colors group"
+                        onClick={() => {
+                          openModal({
+                            onSelect: (file) => {
+                              updateWidget(selectedWidget.id, (w) => {
+                                if (w.type === 'image') w.src = file.url
+                              })
+                            },
+                            storeSlug: useBuilderStore.getState().storeSlug || 'demo',
+                            title: 'בחר תמונה',
+                            type: 'image',
+                            currentImageUrl: (useBuilderStore.getState().storeSlug && useBuilderStore.getState().storeSlug !== 'demo') 
+                              ? selectedWidget.src 
+                              : undefined
+                          })
+                        }}
+                      >
+                        <UploadCloud size={20} className="text-zinc-400 group-hover:text-zinc-500" />
+                        <span className="font-medium">העלאת תמונה</span>
+                      </button>
+                      
+                      {/* URL Input */}
+                      <div className="flex gap-2">
+                      <TextInput
+                        value={selectedWidget.type === 'image' ? (selectedWidget.src ?? '') : ''}
+                        onChange={(e) =>
+                          updateWidget(selectedWidget.id, (w) => {
+                            if (w.type === 'image') w.src = e.target.value
+                          })
+                        }
+                        placeholder="או הזן URL ישירות: https://example.com/image.jpg"
+                      />
+                        {selectedWidget.type === 'image' && selectedWidget.src && (
+                          <button
+                            className="btn btn-ghost btn-sm text-red-500 hover:bg-red-50"
+                            onClick={() => updateWidget(selectedWidget.id, (w) => { if (w.type === 'image') w.src = '' })}
+                            title="מחק תמונה"
+                          >
+                            ✕
+                          </button>
+                        )}
+                      </div>
+                    </div>
                   </Field>
                   <Field label="מקור תמונה (מובייל)">
-                    <TextInput
-                      placeholder="אם ריק – ישתמש במקור הדסקטופ"
-                      value={selectedWidget.type === 'image' ? ((selectedWidget as any).mobileSrc ?? '') : ''}
-                      onChange={(e) =>
-                        updateWidget(selectedWidget.id, (w) => {
-                          if (w.type === 'image') (w as any).mobileSrc = e.target.value || undefined
-                        })
-                      }
-                    />
+                    <div className="space-y-3">
+                      {/* תצוגה מקדימה */}
+                      {selectedWidget.type === 'image' && (selectedWidget as any).mobileSrc && (
+                        <div className="relative">
+                       
+                          <div 
+                            className="relative border rounded-lg overflow-hidden bg-zinc-50 w-full h-48 flex items-center justify-center cursor-pointer hover:border-blue-400 transition-colors" 
+                            onClick={(e) => {
+                              e.preventDefault()
+                              e.stopPropagation()
+                              openModal({
+                                onSelect: (file) => {
+                                  updateWidget(selectedWidget.id, (w) => {
+                                    if (w.type === 'image') (w as any).mobileSrc = file.url
+                                  })
+                                },
+                                storeSlug: useBuilderStore.getState().storeSlug || 'demo',
+                                title: 'בחר תמונה',
+                                type: 'image',
+                                currentImageUrl: (useBuilderStore.getState().storeSlug && useBuilderStore.getState().storeSlug !== 'demo') 
+                                  ? (selectedWidget as any).mobileSrc 
+                                  : undefined
+                              })
+                            }}
+                          >
+                            <img 
+                              src={(selectedWidget as any).mobileSrc} 
+                              alt="תצוגה מקדימה מובייל"
+                              className="max-w-full max-h-full object-contain pointer-events-none"
+                              onError={(e) => {
+                                const target = e.target as HTMLImageElement
+                                target.style.display = 'none'
+                                const parent = target.parentElement
+                                if (parent) {
+                                  parent.innerHTML = '<div class="flex items-center justify-center h-24 text-zinc-400 text-sm">שגיאה בטעינת התמונה</div>'
+                                }
+                              }}
+                              onClick={(e) => {
+                                e.preventDefault()
+                                e.stopPropagation()
+                              }}
+                            />
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                updateWidget(selectedWidget.id, (w) => {
+                                  if (w.type === 'image') (w as any).mobileSrc = undefined
+                                })
+                              }}
+                              className="absolute top-2 right-2 w-6 h-6 bg-red-500 text-white rounded-full text-xs hover:bg-red-600 flex items-center justify-center"
+                              title="מחק תמונה"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* כפתור פתיחת מודל מדיה למובייל */}
+                      <button
+                        type="button"
+                        className="w-full flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-zinc-300 rounded-lg text-zinc-600 hover:border-zinc-400 hover:text-zinc-700 hover:bg-zinc-50 transition-colors group"
+                        onClick={() => {
+                          openModal({
+                            onSelect: (file) => {
+                              updateWidget(selectedWidget.id, (w) => {
+                                if (w.type === 'image') (w as any).mobileSrc = file.url
+                              })
+                            },
+                            storeSlug: useBuilderStore.getState().storeSlug || 'demo',
+                            title: 'בחר תמונה',
+                            type: 'image',
+                            currentImageUrl: (useBuilderStore.getState().storeSlug && useBuilderStore.getState().storeSlug !== 'demo') 
+                              ? (selectedWidget as any).mobileSrc 
+                              : undefined
+                          })
+                        }}
+                      >
+                        <UploadCloud size={20} className="text-zinc-400 group-hover:text-zinc-500" />
+                        <span className="font-medium">העלאת תמונה</span>
+                      </button>
+                      
+                      {/* URL Input */}
+                      <div className="flex gap-2">
+                      <TextInput
+                        placeholder="או הזן URL למובייל: https://example.com/mobile.jpg"
+                        value={selectedWidget.type === 'image' ? ((selectedWidget as any).mobileSrc ?? '') : ''}
+                        onChange={(e) =>
+                          updateWidget(selectedWidget.id, (w) => {
+                            if (w.type === 'image') (w as any).mobileSrc = e.target.value || undefined
+                          })
+                        }
+                      />
+                        {selectedWidget.type === 'image' && (selectedWidget as any).mobileSrc && (
+                          <button
+                            className="btn btn-ghost btn-sm text-red-500 hover:bg-red-50"
+                            onClick={() => updateWidget(selectedWidget.id, (w) => { if (w.type === 'image') (w as any).mobileSrc = undefined })}
+                            title="מחק תמונת מובייל"
+                          >
+                            ✕
+                          </button>
+                        )}
+                      </div>
+                    </div>
                   </Field>
+                  <div className="settings-hr" />
                   <Field label="טקסט חלופי (alt)">
                     <TextInput
                       value={selectedWidget.type === 'image' ? (selectedWidget.alt ?? '') : ''}
@@ -1076,18 +1272,212 @@ export function Inspector() {
               children: (
                 <div className="space-y-3">
                   <Field label="מקור וידאו (MP4) – דסקטופ">
-                    <TextInput
-                      placeholder="https://.../video.mp4"
-                      value={selectedWidget.type === 'video' ? (selectedWidget.src ?? '') : ''}
-                      onChange={(e) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'video') w.src = e.target.value })}
-                    />
+                    <div className="space-y-3">
+                      {/* תצוגה מקדימה */}
+                      {selectedWidget.type === 'video' && selectedWidget.src && (
+                        <div className="relative">
+                          <div 
+                            className="relative border rounded-lg overflow-hidden bg-zinc-50 w-full h-48 flex items-center justify-center cursor-pointer hover:border-blue-400 transition-colors" 
+                            onClick={(e) => {
+                              e.preventDefault()
+                              e.stopPropagation()
+                              openModal({
+                                onSelect: (file) => {
+                                  updateWidget(selectedWidget.id, (w) => {
+                                    if (w.type === 'video') w.src = file.url
+                                  })
+                                },
+                                storeSlug: useBuilderStore.getState().storeSlug || 'demo',
+                                title: 'בחר וידאו',
+                                type: 'video',
+                                currentImageUrl: (useBuilderStore.getState().storeSlug && useBuilderStore.getState().storeSlug !== 'demo') 
+                                  ? selectedWidget.src 
+                                  : undefined
+                              })
+                            }}
+                          >
+                            <video 
+                              src={selectedWidget.src} 
+                              className="max-w-full max-h-full object-contain pointer-events-none"
+                              onError={(e) => {
+                                const target = e.target as HTMLVideoElement
+                                target.style.display = 'none'
+                                const parent = target.parentElement
+                                if (parent) {
+                                  parent.innerHTML = '<div class="flex items-center justify-center h-24 text-zinc-400 text-sm">שגיאה בטעינת הוידאו</div>'
+                                }
+                              }}
+                              onClick={(e) => {
+                                e.preventDefault()
+                                e.stopPropagation()
+                              }}
+                            />
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                updateWidget(selectedWidget.id, (w) => {
+                                  if (w.type === 'video') w.src = ''
+                                })
+                              }}
+                              className="absolute top-2 right-2 w-6 h-6 bg-red-500 text-white rounded-full text-xs hover:bg-red-600 flex items-center justify-center"
+                              title="מחק וידאו"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* כפתור פתיחת מודל מדיה */}
+                      <button
+                        type="button"
+                        className="w-full flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-zinc-300 rounded-lg text-zinc-600 hover:border-zinc-400 hover:text-zinc-700 hover:bg-zinc-50 transition-colors group"
+                        onClick={() => {
+                          openModal({
+                            onSelect: (file) => {
+                              updateWidget(selectedWidget.id, (w) => {
+                                if (w.type === 'video') w.src = file.url
+                              })
+                            },
+                            storeSlug: useBuilderStore.getState().storeSlug || 'demo',
+                            title: 'בחר וידאו',
+                            type: 'video',
+                            currentImageUrl: (useBuilderStore.getState().storeSlug && useBuilderStore.getState().storeSlug !== 'demo') 
+                              ? selectedWidget.src 
+                              : undefined
+                          })
+                        }}
+                      >
+                        <UploadCloud size={20} className="text-zinc-400 group-hover:text-zinc-500" />
+                        <span className="font-medium">העלאת וידאו</span>
+                      </button>
+                      
+                      {/* URL Input */}
+                      <div className="flex gap-2">
+                      <TextInput
+                        value={selectedWidget.type === 'video' ? (selectedWidget.src ?? '') : ''}
+                        onChange={(e) =>
+                          updateWidget(selectedWidget.id, (w) => {
+                            if (w.type === 'video') w.src = e.target.value
+                          })
+                        }
+                        placeholder="או הזן URL ישירות: https://example.com/video.mp4"
+                      />
+                        {selectedWidget.type === 'video' && selectedWidget.src && (
+                          <button
+                            className="btn btn-ghost btn-sm text-red-500 hover:bg-red-50"
+                            onClick={() => updateWidget(selectedWidget.id, (w) => { if (w.type === 'video') w.src = '' })}
+                            title="מחק וידאו"
+                          >
+                            ✕
+                          </button>
+                        )}
+                      </div>
+                    </div>
                   </Field>
                   <Field label="מקור וידאו (MP4) – מובייל">
-                    <TextInput
-                      placeholder="אם ריק – ישתמש במקור הדסקטופ"
-                      value={selectedWidget.type === 'video' ? (((selectedWidget as any).mobileSrc) ?? '') : ''}
-                      onChange={(e) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'video') (w as any).mobileSrc = e.target.value || undefined })}
-                    />
+                    <div className="space-y-3">
+                      {/* תצוגה מקדימה */}
+                      {selectedWidget.type === 'video' && (selectedWidget as any).mobileSrc && (
+                        <div className="relative">
+                          <div 
+                            className="relative border rounded-lg overflow-hidden bg-zinc-50 w-full h-48 flex items-center justify-center cursor-pointer hover:border-blue-400 transition-colors" 
+                            onClick={(e) => {
+                              e.preventDefault()
+                              e.stopPropagation()
+                              openModal({
+                                onSelect: (file) => {
+                                  updateWidget(selectedWidget.id, (w) => {
+                                    if (w.type === 'video') (w as any).mobileSrc = file.url
+                                  })
+                                },
+                                storeSlug: useBuilderStore.getState().storeSlug || 'demo',
+                                title: 'בחר וידאו',
+                                type: 'video',
+                                currentImageUrl: (useBuilderStore.getState().storeSlug && useBuilderStore.getState().storeSlug !== 'demo') 
+                                  ? (selectedWidget as any).mobileSrc 
+                                  : undefined
+                              })
+                            }}
+                          >
+                            <video 
+                              src={(selectedWidget as any).mobileSrc} 
+                              className="max-w-full max-h-full object-contain pointer-events-none"
+                              onError={(e) => {
+                                const target = e.target as HTMLVideoElement
+                                target.style.display = 'none'
+                                const parent = target.parentElement
+                                if (parent) {
+                                  parent.innerHTML = '<div class="flex items-center justify-center h-24 text-zinc-400 text-sm">שגיאה בטעינת הוידאו</div>'
+                                }
+                              }}
+                              onClick={(e) => {
+                                e.preventDefault()
+                                e.stopPropagation()
+                              }}
+                            />
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                updateWidget(selectedWidget.id, (w) => {
+                                  if (w.type === 'video') (w as any).mobileSrc = undefined
+                                })
+                              }}
+                              className="absolute top-2 right-2 w-6 h-6 bg-red-500 text-white rounded-full text-xs hover:bg-red-600 flex items-center justify-center"
+                              title="מחק וידאו"
+                            >
+                              ✕
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                      
+                      {/* כפתור פתיחת מודל מדיה למובייל */}
+                      <button
+                        type="button"
+                        className="w-full flex items-center justify-center gap-2 px-4 py-3 border-2 border-dashed border-zinc-300 rounded-lg text-zinc-600 hover:border-zinc-400 hover:text-zinc-700 hover:bg-zinc-50 transition-colors group"
+                        onClick={() => {
+                          openModal({
+                            onSelect: (file) => {
+                              updateWidget(selectedWidget.id, (w) => {
+                                if (w.type === 'video') (w as any).mobileSrc = file.url
+                              })
+                            },
+                            storeSlug: useBuilderStore.getState().storeSlug || 'demo',
+                            title: 'בחר וידאו',
+                            type: 'video',
+                            currentImageUrl: (useBuilderStore.getState().storeSlug && useBuilderStore.getState().storeSlug !== 'demo') 
+                              ? (selectedWidget as any).mobileSrc 
+                              : undefined
+                          })
+                        }}
+                      >
+                        <UploadCloud size={20} className="text-zinc-400 group-hover:text-zinc-500" />
+                        <span className="font-medium">העלאת וידאו</span>
+                      </button>
+                      
+                      {/* URL Input */}
+                      <div className="flex gap-2">
+                      <TextInput
+                        value={selectedWidget.type === 'video' ? (((selectedWidget as any).mobileSrc) ?? '') : ''}
+                        onChange={(e) =>
+                          updateWidget(selectedWidget.id, (w) => {
+                            if (w.type === 'video') (w as any).mobileSrc = e.target.value || undefined
+                          })
+                        }
+                        placeholder="או הזן URL ישירות: https://example.com/video.mp4"
+                      />
+                        {selectedWidget.type === 'video' && (selectedWidget as any).mobileSrc && (
+                          <button
+                            className="btn btn-ghost btn-sm text-red-500 hover:bg-red-50"
+                            onClick={() => updateWidget(selectedWidget.id, (w) => { if (w.type === 'video') (w as any).mobileSrc = undefined })}
+                            title="מחק וידאו מובייל"
+                          >
+                            ✕
+                          </button>
+                        )}
+                      </div>
+                    </div>
                   </Field>
                   <div className="grid grid-cols-2 gap-3">
                     <Field label="הפעלה אוטומטית">
@@ -1316,6 +1706,60 @@ export function Inspector() {
                     <Field label="הצגת צבעים">
                       <Checkbox label="הצג" checked={selectedWidget.type==='productSlider' ? ((selectedWidget as any).cardOptions?.showColors ?? true) : true} onChange={(v)=>updateWidget(selectedWidget.id, (w)=>{ if (w.type==='productSlider') (w as any).cardOptions = { ...((w as any).cardOptions ?? {}), showColors: v } })} />
                     </Field>
+                    
+                    {/* הגדרות מתקדמות לצבעים */}
+                    {selectedWidget.type === 'productSlider' && ((selectedWidget as any).cardOptions?.showColors ?? true) && (
+                      <>
+                        <Field label="צורת צבע">
+                          <Select 
+                            value={(selectedWidget as any).cardOptions?.colorShape ?? 'circle'} 
+                            onChange={(e) => updateWidget(selectedWidget.id, (w) => { 
+                              if (w.type === 'productSlider') {
+                                (w as any).cardOptions = { 
+                                  ...((w as any).cardOptions ?? {}), 
+                                  colorShape: e.target.value as 'circle' | 'square'
+                                }
+                              }
+                            })}
+                          >
+                            <option value="circle">עגול</option>
+                            <option value="square">ריבוע</option>
+                          </Select>
+                        </Field>
+                        <Field label="גודל צבע (px)">
+                          <NumberInputUI 
+                            value={(selectedWidget as any).cardOptions?.colorSize ?? 14} 
+                            min={8}
+                            max={30}
+                            onChange={(e) => updateWidget(selectedWidget.id, (w) => { 
+                              if (w.type === 'productSlider') {
+                                const value = parseInt(e.target.value) || 14;
+                                (w as any).cardOptions = { 
+                                  ...((w as any).cardOptions ?? {}), 
+                                  colorSize: value
+                                };
+                              }
+                            })}
+                          />
+                        </Field>
+                        <Field label="מספר צבעים מוצגים">
+                          <NumberInputUI 
+                            value={(selectedWidget as any).cardOptions?.maxVisibleColors ?? 5} 
+                            min={2}
+                            max={10}
+                            onChange={(e) => updateWidget(selectedWidget.id, (w) => { 
+                              if (w.type === 'productSlider') {
+                                const value = parseInt(e.target.value) || 5;
+                                (w as any).cardOptions = { 
+                                  ...((w as any).cardOptions ?? {}), 
+                                  maxVisibleColors: value
+                                };
+                              }
+                            })}
+                          />
+                        </Field>
+                      </>
+                    )}
                     <Field label="הוספה לעגלה">
                       <Checkbox label="הצג" checked={selectedWidget.type==='productSlider' ? ((selectedWidget as any).cardOptions?.showQuickAdd ?? false) : false} onChange={(v)=>updateWidget(selectedWidget.id, (w)=>{ if (w.type==='productSlider') (w as any).cardOptions = { ...((w as any).cardOptions ?? {}), showQuickAdd: v } })} />
                     </Field>
@@ -1440,24 +1884,7 @@ export function Inspector() {
               defaultOpen: true,
               children: (
                 <div className="space-y-3">
-                  <Field label="תמונת רקע" icon={<UploadCloud size={14} />}>
-                    <div className="flex gap-2">
-                      <TextInput
-                        value={selectedWidget.backgroundImage ?? ''}
-                        placeholder="URL תמונת רקע (או השאר ריק)"
-                        onChange={(e) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'banner') w.backgroundImage = e.target.value || undefined })}
-                      />
-                      {selectedWidget.backgroundImage && (
-                        <button
-                          className="btn btn-ghost btn-sm text-red-500 hover:bg-red-50"
-                          onClick={() => updateWidget(selectedWidget.id, (w) => { if (w.type === 'banner') w.backgroundImage = undefined })}
-                          title="מחק תמונת רקע"
-                        >
-                          ✕
-                        </button>
-                      )}
-                    </div>
-                  </Field>
+
                   <Field label="כותרת">
                     <TextInput
                       value={selectedWidget.heading ?? ''}
@@ -1472,19 +1899,197 @@ export function Inspector() {
                       onChange={(e) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'banner') w.text = e.target.value || undefined })}
                     />
                   </Field>
-                  <div className="grid grid-cols-1 gap-2">
-                    <Field label="כפתור - תווית">
+                  {/* כפתורים */}
+                  <div className="space-y-3">
+                    <div className="flex items-center justify-between">
+                      <span className="text-sm font-medium">כפתורים</span>
+                      <button
+                        type="button"
+                        className="btn btn-ghost btn-sm text-blue-600"
+                        onClick={() => {
+                          updateWidget(selectedWidget.id, (w) => {
+                            if (w.type === 'banner') {
+                              // Initialize buttons array if it doesn't exist
+                              if (!w.buttons) {
+                                w.buttons = []
+                                // Migrate legacy button if exists
+                                if (w.ctaLabel) {
+                                  w.buttons.push({
+                                    id: '1',
+                                    label: w.ctaLabel,
+                                    href: w.ctaHref || '#',
+                                    variant: w.buttonVariant || 'filled',
+                                    width: w.buttonWidth || 'auto'
+                                  })
+                                }
+                              }
+                              // Add new button
+                              const newId = String(Math.max(0, ...w.buttons.map(b => parseInt(b.id) || 0)) + 1)
+                              w.buttons.push({
+                                id: newId,
+                                label: 'כפתור חדש',
+                                href: '#',
+                                variant: 'filled',
+                                width: 'auto'
+                              })
+                            }
+                          })
+                        }}
+                      >
+                        + הוסף כפתור
+                      </button>
+                    </div>
+                    
+                    {(() => {
+                      // Get buttons array or create from legacy values
+                      let buttonsArray = selectedWidget.buttons || []
+                      if (buttonsArray.length === 0 && selectedWidget.ctaLabel) {
+                        buttonsArray = [{
+                          id: '1',
+                          label: selectedWidget.ctaLabel,
+                          href: selectedWidget.ctaHref || '#',
+                          variant: selectedWidget.buttonVariant || 'filled',
+                          width: selectedWidget.buttonWidth || 'auto'
+                        }]
+                      }
+                      
+                      if (buttonsArray.length === 0) {
+                        return (
+                          <div className="text-center py-4 text-zinc-400 text-sm">
+                            אין כפתורים. לחץ על "הוסף כפתור" להתחיל.
+                          </div>
+                        )
+                      }
+                      
+                      return buttonsArray.map((button, index) => (
+                        <div key={button.id} className="border rounded-lg p-3 space-y-2">
+                          <div className="flex items-center justify-between mb-2">
+                            <span className="text-xs font-medium text-zinc-600">כפתור {index + 1}</span>
+                            {buttonsArray.length > 1 && (
+                              <button
+                                type="button"
+                                className="btn btn-ghost btn-sm text-red-500 hover:bg-red-50"
+                                onClick={() => {
+                                  updateWidget(selectedWidget.id, (w) => {
+                                    if (w.type === 'banner' && w.buttons) {
+                                      w.buttons = w.buttons.filter(b => b.id !== button.id)
+                                      if (w.buttons.length === 0) {
+                                        w.buttons = undefined
+                                      }
+                                    }
+                                  })
+                                }}
+                              >
+                                ✕
+                              </button>
+                            )}
+                          </div>
+                          
+                          <Field label="תווית">
                       <TextInput
-                        value={selectedWidget.ctaLabel ?? ''}
+                              value={button.label}
                         placeholder="טקסט הכפתור"
-                        onChange={(e) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'banner') w.ctaLabel = e.target.value || undefined })}
+                              onChange={(e) => {
+                                updateWidget(selectedWidget.id, (w) => {
+                                  if (w.type === 'banner') {
+                                    // Ensure buttons array exists
+                                    if (!w.buttons) {
+                                      w.buttons = [{
+                                        id: button.id,
+                                        label: e.target.value,
+                                        href: button.href || '#',
+                                        variant: button.variant || 'filled',
+                                        width: button.width || 'auto'
+                                      }]
+                                    } else {
+                                      const buttonIndex = w.buttons.findIndex(b => b.id === button.id)
+                                      if (buttonIndex !== -1) {
+                                        w.buttons[buttonIndex].label = e.target.value
+                                      }
+                                    }
+                                    // Clear legacy fields when using new system
+                                    if (w.buttons.length > 0) {
+                                      w.ctaLabel = undefined
+                                      w.ctaHref = undefined
+                                    }
+                                  }
+                                })
+                              }}
                       />
                     </Field>
-                    <Field label="כפתור - קישור">
+                          
+                          <Field label="קישור">
                       <TextInput
-                        value={selectedWidget.ctaHref ?? ''}
+                              value={button.href || ''}
                         placeholder="https://..."
-                        onChange={(e) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'banner') w.ctaHref = e.target.value || undefined })}
+                              onChange={(e) => {
+                                updateWidget(selectedWidget.id, (w) => {
+                                  if (w.type === 'banner' && w.buttons) {
+                                    const buttonIndex = w.buttons.findIndex(b => b.id === button.id)
+                                    if (buttonIndex !== -1) {
+                                      w.buttons[buttonIndex].href = e.target.value || '#'
+                                    }
+                                  }
+                                })
+                              }}
+                            />
+                          </Field>
+                          
+                          <div className="grid grid-cols-2 gap-2">
+                            <Field label="סגנון">
+                              <Select
+                                value={button.variant || 'filled'}
+                                onChange={(e) => {
+                                  updateWidget(selectedWidget.id, (w) => {
+                                    if (w.type === 'banner' && w.buttons) {
+                                      const buttonIndex = w.buttons.findIndex(b => b.id === button.id)
+                                      if (buttonIndex !== -1) {
+                                        w.buttons[buttonIndex].variant = e.target.value as any
+                                      }
+                                    }
+                                  })
+                                }}
+                              >
+                                <option value="filled">מלא</option>
+                                <option value="outline">מתאר</option>
+                                <option value="text">טקסט בלבד</option>
+                                <option value="underline">טקסט עם קו תחתון</option>
+                              </Select>
+                            </Field>
+                            
+                            <Field label="רוחב">
+                              <Select
+                                value={button.width || 'auto'}
+                                onChange={(e) => {
+                                  updateWidget(selectedWidget.id, (w) => {
+                                    if (w.type === 'banner' && w.buttons) {
+                                      const buttonIndex = w.buttons.findIndex(b => b.id === button.id)
+                                      if (buttonIndex !== -1) {
+                                        w.buttons[buttonIndex].width = e.target.value as any
+                                      }
+                                    }
+                                  })
+                                }}
+                              >
+                                <option value="auto">רגיל</option>
+                                <option value="full">רוחב מלא</option>
+                              </Select>
+                            </Field>
+                          </div>
+                        </div>
+                      ))
+                    })()}
+                    
+                    {/* מרווח בין כפתורים */}
+                    <Field label="מרווח בין כפתורים (px)">
+                      <NumberInputUI
+                        value={selectedWidget.buttonsGap ?? 8}
+                        onChange={(e) => updateWidget(selectedWidget.id, (w) => { 
+                          if (w.type === 'banner') {
+                            const value = (e.target as HTMLInputElement).value
+                            w.buttonsGap = value === '' ? 8 : Number(value)
+                          }
+                        })}
                       />
                     </Field>
                   </div>
@@ -1684,44 +2289,300 @@ export function Inspector() {
             },
             {
               id: 'banner-media',
-              title: 'מדיה',
+              title: 'רקע',
               children: (
                 <div className="space-y-4">
-                  <div className="space-y-2">
-                    <div className="text-xs text-zinc-600">תמונת רקע (דסקטופ)</div>
-                    <div
-                      className="border border-dashed rounded-lg p-4 text-sm text-zinc-500 hover:bg-zinc-50 cursor-pointer flex items-center justify-center gap-2"
-                      onClick={() => setMediaModal({ kind: 'image', widgetId: selectedWidget.id })}
-                    >
-                      <span>לחצו לבחירה / גררו תמונה להעלאה</span>
+                  {/* רקע דסקטופ */}
+                  <div className="space-y-3">
+                    <div className="text-sm font-medium text-zinc-700">רקע דסקטופ</div>
+                    
+                    {/* תצוגת הרקע הנוכחי */}
+                    {(() => {
+                      const hasImage = selectedWidget.type === 'banner' && selectedWidget.backgroundImage
+                      const hasVideo = selectedWidget.type === 'banner' && selectedWidget.backgroundVideoUrl
+                      const currentMedia = hasVideo ? selectedWidget.backgroundVideoUrl : hasImage ? selectedWidget.backgroundImage : null
+                      const mediaType = hasVideo ? 'video' : hasImage ? 'image' : null
+                      
+                      if (currentMedia) {
+                        return (
+                          <div className="bg-zinc-50 border rounded-lg p-2">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                {mediaType === 'video' ? (
+                                  <div className="w-6 h-6 bg-blue-100 rounded flex items-center justify-center">
+                                    <Video size={12} className="text-blue-600" />
                     </div>
-                    {selectedWidget.type === 'banner' && selectedWidget.backgroundImage && (
-                      <div className="text-xs text-zinc-500 break-all">נוכחית: {selectedWidget.backgroundImage}</div>
-                    )}
+                                ) : (
+                                  <div className="w-6 h-6 bg-green-100 rounded flex items-center justify-center">
+                                    <Image size={12} className="text-green-600" />
+                                  </div>
+                                )}
+                                <div className="min-w-0 flex-1">
+                                  <div className="text-xs font-medium">{mediaType === 'video' ? 'וידאו רקע' : 'תמונת רקע'}</div>
+                                  <div className="text-xs text-zinc-500 truncate max-w-[150px]" title={currentMedia}>{currentMedia}</div>
                   </div>
-                  <div className="space-y-2">
-                    <div className="text-xs text-zinc-600">תמונת רקע (מובייל)</div>
+                              </div>
+                              <button
+                                className="btn btn-ghost btn-xs text-red-500 hover:bg-red-50 ml-2"
+                                onClick={() => updateWidget(selectedWidget.id, (w) => {
+                                  if (w.type === 'banner') {
+                                    if (mediaType === 'video') {
+                                      w.backgroundVideoUrl = undefined
+                                    } else {
+                                      w.backgroundImage = undefined
+                                    }
+                                  }
+                                })}
+                                title="הסר רקע"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          </div>
+                        )
+                      }
+                      
+                      return (
+                        <div className="text-center py-4 text-zinc-400 text-sm border border-dashed border-zinc-300 rounded-lg">
+                          אין רקע נבחר
+                        </div>
+                      )
+                    })()}
+                    
+                    {/* כפתורי בחירה */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        className="flex items-center justify-center gap-2 px-3 py-2 border border-zinc-300 rounded-md text-zinc-600 hover:border-zinc-400 hover:text-zinc-700 hover:bg-zinc-50 transition-colors text-sm"
+                        onClick={() => {
+                          openModal({
+                            storeSlug: useBuilderStore.getState().storeSlug || '',
+                            type: 'image',
+                            title: 'בחר תמונת רקע לדסקטופ',
+                            currentImageUrl: selectedWidget.type === 'banner' ? selectedWidget.backgroundImage : undefined,
+                            onSelect: (file) => {
+                              updateWidget(selectedWidget.id, (w) => {
+                                if (w.type === 'banner') {
+                                  w.backgroundImage = file.url
+                                  // נקה וידאו אם יש
+                                  w.backgroundVideoUrl = undefined
+                                }
+                              })
+                            }
+                          })
+                        }}
+                      >
+                        <Image size={16} />
+                        <span>תמונה</span>
+                      </button>
+                      
+                      <button
+                        type="button"
+                        className="flex items-center justify-center gap-2 px-3 py-2 border border-zinc-300 rounded-md text-zinc-600 hover:border-zinc-400 hover:text-zinc-700 hover:bg-zinc-50 transition-colors text-sm"
+                        onClick={() => {
+                          openModal({
+                            storeSlug: useBuilderStore.getState().storeSlug || '',
+                            type: 'video',
+                            title: 'בחר וידאו רקע לדסקטופ',
+                            currentImageUrl: selectedWidget.type === 'banner' ? selectedWidget.backgroundVideoUrl : undefined,
+                            onSelect: (file) => {
+                              updateWidget(selectedWidget.id, (w) => {
+                                if (w.type === 'banner') {
+                                  w.backgroundVideoUrl = file.url
+                                  // נקה תמונה אם יש
+                                  w.backgroundImage = undefined
+                                }
+                              })
+                            }
+                          })
+                        }}
+                      >
+                        <Video size={16} />
+                        <span>וידאו</span>
+                      </button>
+                    </div>
+                    
+                    {/* אפשרות URL ידני */}
+                    <details className="text-sm">
+                      <summary className="cursor-pointer text-zinc-600 hover:text-zinc-900">או הזן URL ידנית</summary>
+                      <div className="mt-2 space-y-2">
                     <TextInput
-                      placeholder="אם ריק – ישתמש בתמונת הדסקטופ"
-                      value={selectedWidget.type === 'banner' ? ((selectedWidget as any).backgroundImageMobile ?? '') : ''}
-                      onChange={(e) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'banner') (w as any).backgroundImageMobile = e.target.value || undefined })}
+                          className="w-full"
+                          placeholder="URL תמונה או וידאו"
+                          value={(() => {
+                            if (selectedWidget.type === 'banner') {
+                              return selectedWidget.backgroundVideoUrl || selectedWidget.backgroundImage || ''
+                            }
+                            return ''
+                          })()}
+                          onChange={(e) => {
+                            const url = e.target.value
+                            updateWidget(selectedWidget.id, (w) => {
+                              if (w.type === 'banner') {
+                                if (url.includes('.mp4') || url.includes('.webm') || url.includes('.mov')) {
+                                  w.backgroundVideoUrl = url || undefined
+                                  w.backgroundImage = undefined
+                                } else {
+                                  w.backgroundImage = url || undefined
+                                  w.backgroundVideoUrl = undefined
+                                }
+                              }
+                            })
+                          }}
                     />
                   </div>
-                  <Field label="וידאו (MP4) – דסקטופ">
+                    </details>
+                  </div>
+                  
+                  {/* רקע מובייל */}
+                  <div className="space-y-3">
+                    <div className="text-sm font-medium text-zinc-700">רקע מובייל</div>
+                    
+                    {/* תצוגת הרקע הנוכחי */}
+                    {(() => {
+                      const hasImageMobile = selectedWidget.type === 'banner' && (selectedWidget as any).backgroundImageMobile
+                      const hasVideoMobile = selectedWidget.type === 'banner' && (selectedWidget as any).backgroundVideoUrlMobile
+                      const currentMediaMobile = hasVideoMobile ? (selectedWidget as any).backgroundVideoUrlMobile : hasImageMobile ? (selectedWidget as any).backgroundImageMobile : null
+                      const mediaTypeMobile = hasVideoMobile ? 'video' : hasImageMobile ? 'image' : null
+                      
+                      if (currentMediaMobile) {
+                        return (
+                          <div className="bg-zinc-50 border rounded-lg p-2">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-2">
+                                {mediaTypeMobile === 'video' ? (
+                                  <div className="w-6 h-6 bg-blue-100 rounded flex items-center justify-center">
+                                    <Video size={12} className="text-blue-600" />
+                                  </div>
+                                ) : (
+                                  <div className="w-6 h-6 bg-green-100 rounded flex items-center justify-center">
+                                    <Image size={12} className="text-green-600" />
+                                  </div>
+                                )}
+                                <div className="min-w-0 flex-1">
+                                  <div className="text-xs font-medium">{mediaTypeMobile === 'video' ? 'וידאו רקע מובייל' : 'תמונת רקע מובייל'}</div>
+                                  <div className="text-xs text-zinc-500 truncate max-w-[150px]" title={currentMediaMobile}>{currentMediaMobile}</div>
+                                </div>
+                              </div>
+                              <button
+                                className="btn btn-ghost btn-xs text-red-500 hover:bg-red-50 ml-2"
+                                onClick={() => updateWidget(selectedWidget.id, (w) => {
+                                  if (w.type === 'banner') {
+                                    if (mediaTypeMobile === 'video') {
+                                      (w as any).backgroundVideoUrlMobile = undefined
+                                    } else {
+                                      (w as any).backgroundImageMobile = undefined
+                                    }
+                                  }
+                                })}
+                                title="הסר רקע מובייל"
+                              >
+                                ✕
+                              </button>
+                            </div>
+                          </div>
+                        )
+                      }
+                      
+                      return (
+                        <div className="text-center py-4 text-zinc-400 text-sm border border-dashed border-zinc-300 rounded-lg">
+                          ישתמש ברקע דסקטופ
+                        </div>
+                      )
+                    })()}
+                    
+                    {/* כפתורי בחירה */}
+                    <div className="grid grid-cols-2 gap-2">
+                      <button
+                        type="button"
+                        className="flex items-center justify-center gap-2 px-3 py-2 border border-zinc-300 rounded-md text-zinc-600 hover:border-zinc-400 hover:text-zinc-700 hover:bg-zinc-50 transition-colors text-sm"
+                        onClick={() => {
+                          openModal({
+                            storeSlug: useBuilderStore.getState().storeSlug || '',
+                            type: 'image',
+                            title: 'בחר תמונת רקע למובייל',
+                            currentImageUrl: selectedWidget.type === 'banner' ? (selectedWidget as any).backgroundImageMobile : undefined,
+                            onSelect: (file) => {
+                              updateWidget(selectedWidget.id, (w) => {
+                                if (w.type === 'banner') {
+                                  (w as any).backgroundImageMobile = file.url
+                                  // נקה וידאו מובייל אם יש
+                                  ;(w as any).backgroundVideoUrlMobile = undefined
+                                }
+                              })
+                            }
+                          })
+                        }}
+                      >
+                        <Image size={16} />
+                        <span>תמונה</span>
+                      </button>
+                      
+                      <button
+                        type="button"
+                        className="flex items-center justify-center gap-2 px-3 py-2 border border-zinc-300 rounded-md text-zinc-600 hover:border-zinc-400 hover:text-zinc-700 hover:bg-zinc-50 transition-colors text-sm"
+                        onClick={() => {
+                          openModal({
+                            storeSlug: useBuilderStore.getState().storeSlug || '',
+                            type: 'video',
+                            title: 'בחר וידאו רקע למובייל',
+                            currentImageUrl: selectedWidget.type === 'banner' ? (selectedWidget as any).backgroundVideoUrlMobile : undefined,
+                            onSelect: (file) => {
+                              updateWidget(selectedWidget.id, (w) => {
+                                if (w.type === 'banner') {
+                                  (w as any).backgroundVideoUrlMobile = file.url
+                                  // נקה תמונה מובייל אם יש
+                                  ;(w as any).backgroundImageMobile = undefined
+                                }
+                              })
+                            }
+                          })
+                        }}
+                      >
+                        <Video size={16} />
+                        <span>וידאו</span>
+                      </button>
+                    </div>
+                    
+                    {/* אפשרות URL ידני */}
+                    <details className="text-sm">
+                      <summary className="cursor-pointer text-zinc-600 hover:text-zinc-900">או הזן URL ידנית</summary>
+                      <div className="mt-2 space-y-2">
                     <TextInput
-                      placeholder="https://.../video.mp4"
-                      value={selectedWidget.type === 'banner' ? (selectedWidget.backgroundVideoUrl ?? '') : ''}
-                      onChange={(e) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'banner') w.backgroundVideoUrl = e.target.value || undefined })}
-                    />
-                  </Field>
-                  <Field label="וידאו (MP4) – מובייל">
-                    <TextInput
-                      placeholder="אם ריק – ישתמש בוידאו הדסקטופ"
-                      value={selectedWidget.type === 'banner' ? (((selectedWidget as any).backgroundVideoUrlMobile) ?? '') : ''}
-                      onChange={(e) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'banner') (w as any).backgroundVideoUrlMobile = e.target.value || undefined })}
-                    />
-                  </Field>
-                  <div className="text-xs text-zinc-500">אם מולא וידאו, הוא יוצג במקום תמונת הרקע.</div>
+                          className="w-full"
+                          placeholder="URL תמונה או וידאו למובייל"
+                          value={(() => {
+                            if (selectedWidget.type === 'banner') {
+                              return (selectedWidget as any).backgroundVideoUrlMobile || (selectedWidget as any).backgroundImageMobile || ''
+                            }
+                            return ''
+                          })()}
+                          onChange={(e) => {
+                            const url = e.target.value
+                            updateWidget(selectedWidget.id, (w) => {
+                              if (w.type === 'banner') {
+                                if (url.includes('.mp4') || url.includes('.webm') || url.includes('.mov')) {
+                                  (w as any).backgroundVideoUrlMobile = url || undefined
+                                  ;(w as any).backgroundImageMobile = undefined
+                                } else {
+                                  (w as any).backgroundImageMobile = url || undefined
+                                  ;(w as any).backgroundVideoUrlMobile = undefined
+                                }
+                              }
+                            })
+                          }}
+                        />
+                      </div>
+                    </details>
+                  </div>
+                  
+                  <div className="text-xs text-zinc-500 bg-zinc-50 p-2 rounded flex items-center gap-2">
+                    <div className="w-4 h-4 bg-blue-100 rounded-full flex items-center justify-center">
+                      <span className="text-blue-600 text-xs">i</span>
+                    </div>
+                    וידאו יוצג במקום תמונה. אם אין רקע מובייל נפרד, ישתמש ברקע דסקטופ.
+                  </div>
+                  
                   <Field label="עיגול פינות (px)">
                     <NumberInputUI
                       className="w-20 h-8"
@@ -1809,6 +2670,239 @@ export function Inspector() {
                       />
                     </Field>
                   </div>
+                </div>
+              )
+            },
+            {
+              id: 'container-background',
+              title: 'תמונת רקע',
+              children: (
+                <div className="space-y-4">
+                  {/* העלאת תמונה */}
+                  <Field label="תמונת רקע" icon={<UploadCloud size={14} />}>
+                    <div className="space-y-2">
+                      <div className="flex gap-2">
+                        <TextInput
+                          value={selectedWidget.backgroundImage ?? ''}
+                          placeholder="או הזן URL ישירות"
+                          onChange={(e) => updateWidget(selectedWidget.id, (w) => { 
+                            if (w.type === 'container') w.backgroundImage = e.target.value || undefined 
+                          })}
+                        />
+                        {selectedWidget.backgroundImage && (
+                          <button
+                            className="btn btn-ghost btn-sm text-red-500 hover:bg-red-50"
+                            onClick={() => updateWidget(selectedWidget.id, (w) => { 
+                              if (w.type === 'container') w.backgroundImage = undefined 
+                            })}
+                            title="מחק תמונת רקע"
+                          >
+                            ✕
+                          </button>
+                        )}
+                      </div>
+                      
+                      <button
+                        type="button"
+                        className="w-full flex items-center justify-center gap-2 px-3 py-2 border border-zinc-300 rounded-md text-zinc-600 hover:border-zinc-400 hover:text-zinc-700 hover:bg-zinc-50 transition-colors text-sm"
+                        onClick={() => {
+                          openModal({
+                            onSelect: (file) => {
+                              updateWidget(selectedWidget.id, (w) => {
+                                if (w.type === 'container') w.backgroundImage = file.url
+                              })
+                            },
+                            storeSlug: useBuilderStore.getState().storeSlug || 'demo',
+                            title: 'בחר תמונת רקע',
+                            type: 'image',
+                            currentImageUrl: (useBuilderStore.getState().storeSlug && useBuilderStore.getState().storeSlug !== 'demo') 
+                              ? selectedWidget.backgroundImage 
+                              : undefined
+                          })
+                        }}
+                      >
+                        <UploadCloud size={16} className="text-zinc-400" />
+                        <span>בחר תמונת רקע</span>
+                      </button>
+                    </div>
+                  </Field>
+
+                  {/* הגדרות תמונת רקע - רק אם יש תמונה */}
+                  {selectedWidget.backgroundImage && (
+                    <>
+                      <Field label="גודל תמונה">
+                        <Select 
+                          value={selectedWidget.backgroundSettings?.size || 'cover'} 
+                          onChange={(e) => updateWidget(selectedWidget.id, (w) => { 
+                            if (w.type === 'container') {
+                              w.backgroundSettings = { 
+                                ...(w.backgroundSettings ?? {}), 
+                                size: e.target.value as any 
+                              }
+                            }
+                          })}
+                        >
+                          <option value="cover">כיסוי מלא (Cover)</option>
+                          <option value="contain">התאמה (Contain)</option>
+                          <option value="auto">גודל מקורי (Auto)</option>
+                          <option value="custom">מותאם אישית</option>
+                        </Select>
+                      </Field>
+
+                      {selectedWidget.backgroundSettings?.size === 'custom' && (
+                        <Field label="גודל מותאם (CSS)">
+                          <TextInput
+                            value={selectedWidget.backgroundSettings?.customSize ?? ''}
+                            placeholder="למשל: 100% 50%, 200px 300px"
+                            onChange={(e) => updateWidget(selectedWidget.id, (w) => { 
+                              if (w.type === 'container') {
+                                w.backgroundSettings = { 
+                                  ...(w.backgroundSettings ?? {}), 
+                                  customSize: e.target.value || undefined 
+                                }
+                              }
+                            })}
+                          />
+                        </Field>
+                      )}
+
+                      <Field label="איזה חלק להציג בתמונה">
+                        {selectedWidget.backgroundSettings?.size === 'cover' ? (
+                          <Select 
+                            value={selectedWidget.backgroundSettings?.position || 'center'} 
+                            onChange={(e) => updateWidget(selectedWidget.id, (w) => { 
+                              if (w.type === 'container') {
+                                w.backgroundSettings = { 
+                                  ...(w.backgroundSettings ?? {}), 
+                                  position: e.target.value as any 
+                                }
+                              }
+                            })}
+                          >
+                            <option value="top">למעלה</option>
+                            <option value="center">מרכז</option>
+                            <option value="bottom">תחתון</option>
+                          </Select>
+                        ) : (
+                          <Select 
+                            value={selectedWidget.backgroundSettings?.position || 'center'} 
+                            onChange={(e) => updateWidget(selectedWidget.id, (w) => { 
+                              if (w.type === 'container') {
+                                w.backgroundSettings = { 
+                                  ...(w.backgroundSettings ?? {}), 
+                                  position: e.target.value as any 
+                                }
+                              }
+                            })}
+                          >
+                            <option value="center">מרכז</option>
+                            <option value="top">למעלה</option>
+                            <option value="bottom">למטה</option>
+                            <option value="left">שמאל</option>
+                            <option value="right">ימין</option>
+                            <option value="top-left">למעלה שמאל</option>
+                            <option value="top-right">למעלה ימין</option>
+                            <option value="bottom-left">למטה שמאל</option>
+                            <option value="bottom-right">למטה ימין</option>
+                            <option value="custom">מותאם אישית</option>
+                          </Select>
+                        )}
+                      </Field>
+
+                      {selectedWidget.backgroundSettings?.position === 'custom' && (
+                        <Field label="מיקום מותאם (CSS)">
+                          <TextInput
+                            value={selectedWidget.backgroundSettings?.customPosition ?? ''}
+                            placeholder="למשל: 20% 80%, 10px 50px"
+                            onChange={(e) => updateWidget(selectedWidget.id, (w) => { 
+                              if (w.type === 'container') {
+                                w.backgroundSettings = { 
+                                  ...(w.backgroundSettings ?? {}), 
+                                  customPosition: e.target.value || undefined 
+                                }
+                              }
+                            })}
+                          />
+                        </Field>
+                      )}
+
+                      <Field label="חזרה (Repeat)">
+                        <Select 
+                          value={selectedWidget.backgroundSettings?.repeat || 'no-repeat'} 
+                          onChange={(e) => updateWidget(selectedWidget.id, (w) => { 
+                            if (w.type === 'container') {
+                              w.backgroundSettings = { 
+                                ...(w.backgroundSettings ?? {}), 
+                                repeat: e.target.value as any 
+                              }
+                            }
+                          })}
+                        >
+                          <option value="no-repeat">ללא חזרה</option>
+                          <option value="repeat">חזרה בכל הכיוונים</option>
+                          <option value="repeat-x">חזרה אופקית</option>
+                          <option value="repeat-y">חזרה אנכית</option>
+                          <option value="space">חזרה עם רווחים</option>
+                          <option value="round">חזרה מעוגלת</option>
+                        </Select>
+                      </Field>
+
+                      <Field label="התקשרות (Attachment)">
+                        <Select 
+                          value={selectedWidget.backgroundSettings?.attachment || 'scroll'} 
+                          onChange={(e) => updateWidget(selectedWidget.id, (w) => { 
+                            if (w.type === 'container') {
+                              w.backgroundSettings = { 
+                                ...(w.backgroundSettings ?? {}), 
+                                attachment: e.target.value as any 
+                              }
+                            }
+                          })}
+                        >
+                          <option value="scroll">גלילה רגילה</option>
+                          <option value="fixed">קבועה במקום</option>
+                          <option value="local">גלילה מקומית</option>
+                        </Select>
+                      </Field>
+
+                      {/* Overlay */}
+                      <div className="border-t pt-3">
+                        <Field label="החשכה (Overlay)">
+                          <ColorPicker
+                            value={selectedWidget.backgroundSettings?.overlay ?? 'rgba(0,0,0,0.5)'}
+                            onChange={(color) => updateWidget(selectedWidget.id, (w) => { 
+                              if (w.type === 'container') {
+                                w.backgroundSettings = { 
+                                  ...(w.backgroundSettings ?? {}), 
+                                  overlay: color 
+                                }
+                              }
+                            })}
+                          />
+                        </Field>
+
+                        <Field label="עוצמת החשכה (0-1)">
+                          <NumberInputUI
+                            value={selectedWidget.backgroundSettings?.overlayOpacity ?? 0}
+                            min={0}
+                            max={1}
+                            step={0.1}
+                            onChange={(e) => {
+                              const val = Number((e.target as HTMLInputElement).value)
+                              updateWidget(selectedWidget.id, (w) => { 
+                                if (w.type === 'container') {
+                                  w.backgroundSettings = { 
+                                    ...(w.backgroundSettings ?? {}), 
+                                    overlayOpacity: val 
+                                  }
+                                }
+                              })
+                            }}
+                          />
+                        </Field>
+                      </div>
+                    </>
+                  )}
                 </div>
               )
             },
@@ -2121,6 +3215,9 @@ export function Inspector() {
         </div>
       )}
       </div>
+      
+      {/* מודל מדיה */}
+      <Modal />
     </aside>
   )
 }

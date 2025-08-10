@@ -83,11 +83,6 @@ function PreviewApp() {
             <div className="w-full" style={(section.style?.maxWidth ?? '1140px') === '100%' ? { width: '100%' } : { maxWidth: section.style?.maxWidth ?? '1140px', marginLeft: 'auto', marginRight: 'auto' }}>
               {(Array.isArray(section.widgets) ? section.widgets : []).map((w, idx) => (
                 <div key={w.id} className="py-1 relative">
-                  {/* סקלטון עדין רק לתמונות ולבאנר עד עלייה */}
-                  {/* ההחלפה בפועל נעשית בקומפוננטות עצמן, זה fallback כללי */}
-                  {(w.type === 'image' || w.type === 'banner') && (
-                    <div className="qs-skeleton-lite" aria-hidden />
-                  )}
                   <WidgetRenderer widget={w} sectionId={section.id} index={idx} draggable={false} />
                 </div>
               ))}

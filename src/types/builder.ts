@@ -194,11 +194,25 @@ export type BannerWidget = WidgetCommon & {
   type: 'banner'
   backgroundImage?: string
   backgroundVideoUrl?: string
+  // Mobile-specific background media
+  backgroundImageMobile?: string
+  backgroundVideoUrlMobile?: string
   overlayColor?: string
   heading?: string
   text?: string
+  // Legacy single button support (kept for backward compatibility)
   ctaLabel?: string
   ctaHref?: string
+  // New multi-button support
+  buttons?: Array<{
+    id: string
+    label: string
+    href?: string
+    style?: StyleValues
+    hoverStyle?: StyleValues
+    variant?: 'filled' | 'outline' | 'text' | 'underline'
+    width?: 'auto' | 'full'
+  }>
   // New rich controls
   contentAlign?: Alignment // legacy; kept for backward-compat
   contentPosition?: { horizontal: Alignment; vertical: Alignment }
@@ -210,6 +224,7 @@ export type BannerWidget = WidgetCommon & {
   buttonWidth?: 'auto' | 'full'
   buttonAlign?: Alignment
   buttonVariant?: 'filled' | 'outline' | 'text' | 'underline'
+  buttonsGap?: number // Gap between multiple buttons
 }
 
 export type MarqueeWidget = WidgetCommon & {
@@ -235,6 +250,21 @@ export type ProductSliderWidget = WidgetCommon & {
   autoplay?: boolean
   arrowSize?: number
   arrowColor?: string
+  imageRatio?: string
+  cardOptions?: {
+    showTitle?: boolean
+    showPrice?: boolean
+    showSizes?: boolean
+    showColors?: boolean
+    showBadges?: boolean
+    showWishlist?: boolean
+    showQuickAdd?: boolean
+    showCardBorder?: boolean
+    contentAlign?: 'left' | 'center' | 'right'
+    colorShape?: 'circle' | 'square'
+    colorSize?: number
+    maxVisibleColors?: number
+  }
 }
 
 export type HtmlWidget = WidgetCommon & {
@@ -272,6 +302,18 @@ export type ContainerWidget = WidgetCommon & {
   columns?: number
   columnsChildren?: Widget[][]
   children: Widget[]
+  // תמונת רקע עם הגדרות מתקדמות
+  backgroundImage?: string
+  backgroundSettings?: {
+    size?: 'auto' | 'cover' | 'contain' | 'custom'
+    customSize?: string
+    position?: 'center' | 'top' | 'bottom' | 'left' | 'right' | 'top-left' | 'top-right' | 'bottom-left' | 'bottom-right' | 'custom'
+    customPosition?: string
+    repeat?: 'no-repeat' | 'repeat' | 'repeat-x' | 'repeat-y' | 'space' | 'round'
+    attachment?: 'scroll' | 'fixed' | 'local'
+    overlay?: string
+    overlayOpacity?: number
+  }
 }
 
 export type Widget =

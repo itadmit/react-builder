@@ -68,11 +68,12 @@ export function WidgetRenderer({ widget, sectionId, index, draggable = true }: {
   const [hovered, setHovered] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
   const [editValue, setEditValue] = useState<string | undefined>(undefined)
-  const [assetLoaded, setAssetLoaded] = useState<boolean>(false)
+  const [assetLoaded, setAssetLoaded] = useState<boolean>(true) // מתחיל כ-true
   const [assetProgress, setAssetProgress] = useState<number>(0)
-  // אפס מצב טעינה כשמקור הנכס משתנה
+  const [currentAssetKey, setCurrentAssetKey] = useState<string>('')
+  
+  // אפס מצב טעינה רק כשמקור הנכס באמת משתנה
   useEffect(() => {
-    // אתחול טעינה כשנכס משתנה (לוקח בחשבון מובייל/דסקטופ)
     const currentDevice = useBuilderStore.getState().device
     const key = widget.type === 'image'
       ? ((currentDevice === 'mobile' && (widget as any).mobileSrc) || (widget as any).src)
@@ -81,13 +82,27 @@ export function WidgetRenderer({ widget, sectionId, index, draggable = true }: {
         : widget.type === 'video'
           ? ((currentDevice === 'mobile' && (widget as any).mobileSrc) || (widget as any).src)
           : undefined
+    
+    const assetKey = key || ''
+    
+    // אם המפתח לא השתנה, לא צריך לעשות כלום
+    if (assetKey === currentAssetKey) {
+      return
+    }
+    
+    setCurrentAssetKey(assetKey)
+    
+    // אם אין קובץ לטעון, פשוט מסמן שסיים
     if (!key) {
       setAssetLoaded(true)
       setAssetProgress(0)
       return
     }
+    
+    // רק אם הקובץ באמת השתנה - התחל אנימציה
     setAssetLoaded(false)
     setAssetProgress(1)
+    
     // מדמה התקדמות עד ~90% כדי לתת חיווי גם ללא Content-Length
     let current = 1
     const interval = window.setInterval(() => {
@@ -98,6 +113,7 @@ export function WidgetRenderer({ widget, sectionId, index, draggable = true }: {
     }, 200)
     return () => window.clearInterval(interval)
   }, [
+    // כלול רק את הקבצים עצמם - לא את ה-device
     widget.type === 'image' ? (widget as any).src : undefined,
     widget.type === 'image' ? (widget as any).mobileSrc : undefined,
     widget.type === 'video' ? (widget as any).src : undefined,
@@ -106,7 +122,8 @@ export function WidgetRenderer({ widget, sectionId, index, draggable = true }: {
     widget.type === 'banner' ? (widget as any).backgroundImageMobile : undefined,
     widget.type === 'banner' ? (widget as any).backgroundVideoUrl : undefined,
     widget.type === 'banner' ? (widget as any).backgroundVideoUrlMobile : undefined,
-    useBuilderStore.getState().device,
+    widget.id, // הוסף widget.id כדי לוודא update כש-widget משתנה
+    currentAssetKey, // הוסף את המפתח הנוכחי
   ])
 
   if (!widget.visible) return null
@@ -338,12 +355,17 @@ export function WidgetRenderer({ widget, sectionId, index, draggable = true }: {
       })()}
       {widget.type === 'spacer' && (() => { const w = widget as Extract<Widget, { type: 'spacer' }>; return <div style={{ height: (typeof w.height === 'number' ? w.height : String(w.height)) }} /> })()}
       {widget.type === 'image' && (
-        (() => { const w = widget as Extract<Widget, { type: 'image' }>; const currentDevice = useBuilderStore.getState().device; const imgSrc = (currentDevice === 'mobile' && (w as any).mobileSrc) ? (w as any).mobileSrc : w.src; return <figure className="overflow-hidden relative" style={{ borderRadius: effectiveHoverStyle.borderRadius as any, minHeight: assetLoaded ? undefined : 180 }}>
+        (() => { const w = widget as Extract<Widget, { type: 'image' }>; const currentDevice = useBuilderStore.getState().device; const imgSrc = (currentDevice === 'mobile' && (w as any).mobileSrc) ? (w as any).mobileSrc : w.src; 
+        // אם אין תמונה, לא לרנדר כלום
+        if (!imgSrc) return null;
+        return <figure className="overflow-hidden relative" style={{ borderRadius: effectiveHoverStyle.borderRadius as any, minHeight: assetLoaded ? undefined : 180 }}>
           {!assetLoaded && (
-            <div className="qs-skeleton">
-              <div className="absolute top-2 left-2 rtl:left-auto rtl:right-2 bg-white/70 rounded px-2 py-1 text-[11px] text-zinc-800 font-medium shadow">
-                מוריד תמונה מהאינטרנט… {Math.max(1, Math.min(99, Math.round(assetProgress)))}%
-              </div>
+            <div className={draggable ? "qs-skeleton" : "qs-skeleton-lite"}>
+              {draggable && (
+                <div className="absolute top-2 left-2 rtl:left-auto rtl:right-2 bg-white/70 rounded px-2 py-1 text-[11px] text-zinc-800 font-medium shadow">
+                  מוריד תמונה מהאינטרנט… {Math.max(1, Math.min(99, Math.round(assetProgress)))}%
+                </div>
+              )}
             </div>
           )}
           <a 
@@ -403,12 +425,51 @@ export function WidgetRenderer({ widget, sectionId, index, draggable = true }: {
               const [colOver, setColOver] = useState<number | null>(null)
               const [afterIndex, setAfterIndex] = useState<number>(-1)
               const currentColumns = cont.responsiveColumns?.[device] || cont.columns
+              
+              // בניית סגנונות תמונת הרקע
+              const backgroundStyle: React.CSSProperties = {}
+              if (cont.backgroundImage) {
+                const settings = cont.backgroundSettings || {}
+                backgroundStyle.backgroundImage = `url(${cont.backgroundImage})`
+                backgroundStyle.backgroundSize = settings.size === 'custom' && settings.customSize 
+                  ? settings.customSize 
+                  : settings.size || 'cover'
+                backgroundStyle.backgroundPosition = settings.position === 'custom' && settings.customPosition
+                  ? settings.customPosition
+                  : settings.position || 'center'
+                backgroundStyle.backgroundRepeat = settings.repeat || 'no-repeat'
+                backgroundStyle.backgroundAttachment = settings.attachment || 'scroll'
+                
+                // overlay אם יש
+                if (settings.overlay && settings.overlayOpacity && settings.overlayOpacity > 0) {
+                  backgroundStyle.position = 'relative'
+                }
+              }
+              
               return (
-                <div className="grid" style={{ gridTemplateColumns: `repeat(${currentColumns}, minmax(0, 1fr))`, gap: cont.flex?.gap ?? 16 }}>
+                <div 
+                  className="grid relative" 
+                  style={{ 
+                    gridTemplateColumns: `repeat(${currentColumns}, minmax(0, 1fr))`, 
+                    gap: cont.flex?.gap ?? 16,
+                    ...backgroundStyle
+                  }}
+                >
+                  {/* Overlay אם יש */}
+                  {cont.backgroundImage && cont.backgroundSettings?.overlay && cont.backgroundSettings?.overlayOpacity && cont.backgroundSettings.overlayOpacity > 0 && (
+                    <div 
+                      className="absolute inset-0 pointer-events-none" 
+                      style={{ 
+                        backgroundColor: cont.backgroundSettings.overlay,
+                        opacity: cont.backgroundSettings.overlayOpacity,
+                        zIndex: 1
+                      }} 
+                    />
+                  )}
                   {Array.from({ length: (currentColumns as number) }).map((_, colIdx) => (
                     <div
                       key={colIdx}
-                      className={`min-h-[40px] rounded ${draggable ? 'border border-dashed p-1' : ''} ${draggable && colOver === colIdx ? 'border-[var(--qs-outline-strong)]' : ''}`}
+                      className={`min-h-[40px] rounded relative z-10 ${draggable ? 'border border-dashed p-1' : ''} ${draggable && colOver === colIdx ? 'border-[var(--qs-outline-strong)]' : ''}`}
                       onDragOver={!draggable ? undefined : (e) => {
                         if (e.dataTransfer.types.includes('application/x-qs-widget')) {
                           e.preventDefault();
@@ -480,10 +541,12 @@ export function WidgetRenderer({ widget, sectionId, index, draggable = true }: {
           {(() => { const b = widget as Extract<Widget, { type: 'banner' }>; return (
             <>
               {!assetLoaded && (
-                <div className="qs-skeleton">
-                  <div className="absolute top-2 left-2 rtl:left-auto rtl:right-2 bg-white/70 rounded px-2 py-1 text-[11px] text-zinc-800 font-medium shadow">
-                    מוריד תמונה מהאינטרנט… {Math.max(1, Math.min(99, Math.round(assetProgress)))}%
-                  </div>
+                <div className={draggable ? "qs-skeleton" : "qs-skeleton-lite"}>
+                  {draggable && (
+                    <div className="absolute top-2 left-2 rtl:left-auto rtl:right-2 bg-white/70 rounded px-2 py-1 text-[11px] text-zinc-800 font-medium shadow">
+                      מוריד תמונה מהאינטרנט… {Math.max(1, Math.min(99, Math.round(assetProgress)))}%
+                    </div>
+                  )}
                 </div>
               )}
               {(() => {
@@ -535,94 +598,115 @@ export function WidgetRenderer({ widget, sectionId, index, draggable = true }: {
                 <div className={`${pos.horizontal === 'center' ? 'max-w-[720px]' : ''} w-full py-3`} style={{ paddingLeft: baseSidePadding, paddingRight: baseSidePadding, ...sidePadding }}>
                   {b.heading && <div className="mb-2" style={styleToCss(b.headingStyle)} dangerouslySetInnerHTML={{ __html: b.heading as string }} />}
                   {b.text && <div className="mb-3" style={styleToCss(b.textStyle)} dangerouslySetInnerHTML={{ __html: b.text as string }} />}
-                  {b.ctaLabel && (
-                    <div className={`flex flex-wrap gap-2 ${(() => {
-                      const align = b.buttonAlign || pos.horizontal
-                      return align === 'start'
-                        ? (isRTL ? 'justify-end' : 'justify-start')
-                        : align === 'end'
-                          ? (isRTL ? 'justify-start' : 'justify-end')
-                          : 'justify-center'
-                    })()}`}>
-                      <a 
-                        href={draggable ? undefined : (b.ctaHref ?? '#')} 
-                        onClick={draggable ? (e) => e.preventDefault() : undefined}
-                        className={`inline-flex items-center justify-center ${draggable ? 'pointer-events-none' : ''} ${(() => {
-                          const variant = b.buttonVariant || 'filled'
-                          const computedStyle = styleToCss(b.buttonStyle)
-                          const normalize = (c?: string) => (c ?? '').toLowerCase().replace(/\s+/g, '')
-                          const isWhite = (c?: string) => {
-                            const n = normalize(c)
-                            return n === '#fff' || n === '#ffffff' || n === 'white' || n === 'rgb(255,255,255)' || n === 'rgba(255,255,255,1)'
-                          }
-                          const computedTextColor = variant === 'filled' ? (computedStyle.color as any) : (isWhite(computedStyle.color as any) || !computedStyle.color ? '#111111' : (computedStyle.color as any))
-                          
-                          if (variant === 'outline') {
-                            return 'border'
-                          }
-                          if (variant === 'underline') {
-                            return 'underline'
-                          }
-                          if (variant === 'text') {
+                  {(() => {
+                    // Helper function to render a single button
+                    const renderButton = (buttonData: { label: string; href?: string; variant?: string; width?: string; style?: any }, isLegacy = false) => {
+                      const variant = buttonData.variant || b.buttonVariant || 'filled'
+                      const buttonWidth = buttonData.width || b.buttonWidth
+                      const buttonStyle = isLegacy ? b.buttonStyle : { ...b.buttonStyle, ...buttonData.style }
+                      const computedStyle = styleToCss(buttonStyle)
+                      const normalize = (c?: string) => (c ?? '').toLowerCase().replace(/\s+/g, '')
+                      const isWhite = (c?: string) => {
+                        const n = normalize(c)
+                        return n === '#fff' || n === '#ffffff' || n === 'white' || n === 'rgb(255,255,255)' || n === 'rgba(255,255,255,1)'
+                      }
+                      const computedTextColor = variant === 'filled' ? (computedStyle.color as any) : (isWhite(computedStyle.color as any) || !computedStyle.color ? '#111111' : (computedStyle.color as any))
+                      
+                      return (
+                        <a 
+                          key={buttonData.href || buttonData.label}
+                          href={draggable ? undefined : (buttonData.href ?? '#')} 
+                          onClick={draggable ? (e) => e.preventDefault() : undefined}
+                          className={`inline-flex items-center justify-center ${draggable ? 'pointer-events-none' : ''} ${(() => {
+                            if (variant === 'outline') {
+                              return 'border'
+                            }
+                            if (variant === 'underline') {
+                              return 'underline'
+                            }
+                            if (variant === 'text') {
+                              return ''
+                            }
                             return ''
-                          }
-                          return ''
-                        })()} ${b.buttonWidth === 'full' ? 'w-full' : ''}`}
-                        style={(() => {
-                          const baseStyle = styleToCss(b.buttonStyle)
-                          const variant = b.buttonVariant || 'filled'
-                          const normalize = (c?: string) => (c ?? '').toLowerCase().replace(/\s+/g, '')
-                          const isWhite = (c?: string) => {
-                            const n = normalize(c)
-                            return n === '#fff' || n === '#ffffff' || n === 'white' || n === 'rgb(255,255,255)' || n === 'rgba(255,255,255,1)'
-                          }
-                          const computedTextColor = variant === 'filled' ? (baseStyle.color as any) : (isWhite(baseStyle.color as any) || !baseStyle.color ? '#111111' : (baseStyle.color as any))
-                          
-                          const basePadding = {
-                            paddingTop: baseStyle.paddingTop ?? 8,
-                            paddingBottom: baseStyle.paddingBottom ?? 8,
-                            paddingLeft: baseStyle.paddingLeft ?? 16,
-                            paddingRight: baseStyle.paddingRight ?? 16,
-                          }
-                          
-                          if (variant === 'filled') {
+                          })()} ${buttonWidth === 'full' ? 'w-full' : ''}`}
+                          style={(() => {
+                            const baseStyle = computedStyle
+                            
+                            const basePadding = {
+                              paddingTop: baseStyle.paddingTop ?? 8,
+                              paddingBottom: baseStyle.paddingBottom ?? 8,
+                              paddingLeft: baseStyle.paddingLeft ?? 16,
+                              paddingRight: baseStyle.paddingRight ?? 16,
+                            }
+                            
+                            if (variant === 'filled') {
+                              return { ...baseStyle, ...basePadding }
+                            }
+                            if (variant === 'outline') {
+                              return { 
+                                ...baseStyle, 
+                                ...basePadding,
+                                background: 'transparent', 
+                                color: computedTextColor,
+                                borderColor: baseStyle.borderColor ?? computedTextColor ?? '#111',
+                                borderWidth: baseStyle.borderWidth ?? 1,
+                                borderStyle: baseStyle.borderStyle ?? 'solid',
+                              }
+                            }
+                            if (variant === 'underline') {
+                              return { 
+                                ...baseStyle,
+                                background: 'transparent',
+                                color: computedTextColor,
+                                textDecoration: 'underline',
+                                padding: '4px 0',
+                              }
+                            }
+                            if (variant === 'text') {
+                              return { 
+                                ...baseStyle,
+                                background: 'transparent',
+                                color: computedTextColor,
+                                padding: '4px 0',
+                              }
+                            }
                             return { ...baseStyle, ...basePadding }
-                          }
-                          if (variant === 'outline') {
-                            return { 
-                              ...baseStyle, 
-                              ...basePadding,
-                              background: 'transparent', 
-                              color: computedTextColor,
-                              borderColor: baseStyle.borderColor ?? computedTextColor ?? '#111',
-                              borderWidth: baseStyle.borderWidth ?? 1,
-                              borderStyle: baseStyle.borderStyle ?? 'solid',
-                            }
-                          }
-                          if (variant === 'underline') {
-                            return { 
-                              ...baseStyle,
-                              background: 'transparent',
-                              color: computedTextColor,
-                              textDecoration: 'underline',
-                              padding: '4px 0',
-                            }
-                          }
-                          if (variant === 'text') {
-                            return { 
-                              ...baseStyle,
-                              background: 'transparent',
-                              color: computedTextColor,
-                              padding: '4px 0',
-                            }
-                          }
-                          return { ...baseStyle, ...basePadding }
-                        })()}
+                          })()}
+                        >
+                          {buttonData.label}
+                        </a>
+                      )
+                    }
+
+                    // Determine which buttons to show
+                    const buttonsToRender = b.buttons && b.buttons.length > 0 
+                      ? b.buttons
+                      : b.ctaLabel 
+                        ? [{ label: b.ctaLabel, href: b.ctaHref }]
+                        : []
+
+                    if (buttonsToRender.length === 0) return null
+
+                    const gapSize = b.buttonsGap ?? 8
+                    
+                    return (
+                      <div 
+                        className={`flex flex-wrap ${(() => {
+                          const align = b.buttonAlign || pos.horizontal
+                          return align === 'start'
+                            ? (isRTL ? 'justify-end' : 'justify-start')
+                            : align === 'end'
+                              ? (isRTL ? 'justify-start' : 'justify-end')
+                              : 'justify-center'
+                        })()}`}
+                        style={{ gap: `${gapSize}px` }}
                       >
-                        {b.ctaLabel}
-                      </a>
-                    </div>
-                  )}
+                        {buttonsToRender.map((buttonData, index) => 
+                          renderButton(buttonData, !b.buttons || b.buttons.length === 0)
+                        )}
+                      </div>
+                    )
+                  })()}
                 </div>
               </div>
             )
@@ -702,21 +786,57 @@ export function WidgetRenderer({ widget, sectionId, index, draggable = true }: {
 function ProductSliderView({ widget, device, draggable = true }: { widget: Extract<Widget, { type: 'productSlider' }>; device: 'desktop' | 'tablet' | 'mobile'; draggable?: boolean }) {
   const containerRef = useRef<HTMLDivElement | null>(null)
   const [items, setItems] = useState<any[] | null>(widget.products ?? null)
-  const [wishlist, setWishlist] = useState<Set<string>>(() => new Set<string>())
+  const [wishlist, setWishlist] = useState<Set<string>>(() => {
+    // התחבר למערכת הווישליסט הקיימת
+    const existingWishlist = (window as any).userWishlist
+    return new Set(Array.isArray(existingWishlist) ? existingWishlist.map(String) : [])
+  })
+  const [expandedColors, setExpandedColors] = useState<Record<string, boolean>>({})
+  const [productGalleries, setProductGalleries] = useState<Record<string, { currentImage: string; gallery: string[]; selectedColor?: string }>>({})
+  const [loadingGalleries, setLoadingGalleries] = useState<Set<string>>(new Set())
   const slug = useBuilderStore.getState().storeSlug || (window as any).__BUILDER_BOOTSTRAP__?.storeSlug || (window as any).__PREVIEW_BOOTSTRAP__?.storeSlug || (window as any).STORE_DATA?.slug
   const useApi = !!slug && (!!(widget as any).categoryId || !!(Array.isArray(widget.categoryIds) && widget.categoryIds.length) || !!(Array.isArray(widget.productIds) && widget.productIds.length))
-  // טעינת Wishlist התחלתית
+  // התחבר לעדכוני הווישליסט הקיימים
   useEffect(() => {
-    if (!slug) return
-    fetch(`/api/stores/${slug}/wishlist`, { credentials: 'include' })
-      .then(r => r.ok ? r.json() : null)
-      .then((data) => {
-        const ids: any[] = (data?.items ?? data ?? []) as any[]
-        if (Array.isArray(ids)) {
-          setWishlist(new Set(ids.map((x: any) => String(x))))
-        }
-      })
-      .catch(() => {})
+    // פונקציה לעדכון הווישליסט מהמערכת הקיימת
+    function updateWishlistFromGlobal() {
+      const existingWishlist = (window as any).userWishlist
+      if (Array.isArray(existingWishlist)) {
+        setWishlist(new Set(existingWishlist.map(String)))
+      }
+    }
+
+    // עדכון ראשוני
+    updateWishlistFromGlobal()
+
+    // האזנה לעדכוני ווישליסט
+    function handleWishlistUpdate() {
+      updateWishlistFromGlobal()
+    }
+
+    document.addEventListener('wishlistUpdated', handleWishlistUpdate)
+    
+    // Fallback - עדכון מה-API אם אין מערכת קיימת
+    if (!slug) return () => {
+      document.removeEventListener('wishlistUpdated', handleWishlistUpdate)
+    }
+    
+    // אם אין window.userWishlist, נטען מה-API
+    if (!(window as any).userWishlist) {
+      fetch(`/api/stores/${slug}/wishlist`, { credentials: 'include' })
+        .then(r => r.ok ? r.json() : null)
+        .then((data) => {
+          const ids: any[] = (data?.items ?? data ?? []) as any[]
+          if (Array.isArray(ids)) {
+            setWishlist(new Set(ids.map((x: any) => String(x))))
+          }
+        })
+        .catch(() => {})
+    }
+
+    return () => {
+      document.removeEventListener('wishlistUpdated', handleWishlistUpdate)
+    }
   }, [slug])
   useEffect(() => {
     if (!useApi) return
@@ -807,21 +927,51 @@ function ProductSliderView({ widget, device, draggable = true }: { widget: Extra
 
   const ratio = (widget as any).imageRatio || '6/9'
   const card = (widget as any).cardOptions || {}
-  // Wishlist toggle
+  // Wishlist toggle - מתחבר למערכת הגלובלית
   async function toggleWishlist(productId: string | number) {
-    if (!slug) {
-      // מצב ללא API – טוגל מקומי
-      setWishlist(prev => {
-        const s = new Set(prev); const id = String(productId); if (s.has(id)) s.delete(id); else s.add(id); return s
-      })
-      return
+    // קודם נעדכן את ה-state המקומי לעדכון מיידי
+    setWishlist(prev => {
+      const s = new Set(prev)
+      const id = String(productId)
+      if (s.has(id)) {
+        s.delete(id)
+      } else {
+        s.add(id)
+      }
+      return s
+    })
+
+    // אם יש מערכת גלובלית, נשתמש בה
+    if (typeof (window as any).toggleWishlist === 'function') {
+      try {
+        // יצירת אירוע דמה עבור המערכת הגלובלית
+        const fakeEvent = {
+          preventDefault: () => {},
+          stopPropagation: () => {},
+          stopImmediatePropagation: () => {},
+          currentTarget: null,
+          target: null
+        }
+        ;(window as any).toggleWishlist(productId, fakeEvent)
+      } catch (error) {
+        console.error('Error calling global toggleWishlist:', error)
+      }
+    } else if (slug) {
+      // fallback ל-API ישיר
+      try {
+        const res = await fetch(`/api/stores/${slug}/wishlist`, { 
+          method: 'POST', 
+          credentials: 'include', 
+          headers: { 'Content-Type': 'application/json' }, 
+          body: JSON.stringify({ product_id: productId }) 
+        })
+        const data = await res.json()
+        const itemsIds = (data?.items ?? []) as any[]
+        setWishlist(new Set(itemsIds.map((x: any) => String(x))))
+      } catch (error) {
+        console.error('Error updating wishlist via API:', error)
+      }
     }
-    try {
-      const res = await fetch(`/api/stores/${slug}/wishlist`, { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ product_id: productId }) })
-      const data = await res.json()
-      const itemsIds = (data?.items ?? []) as any[]
-      setWishlist(new Set(itemsIds.map((x: any) => String(x))))
-    } catch {}
   }
   // Quick add to cart (פשוט)
   async function quickAdd(item: any) {
@@ -840,6 +990,73 @@ function ProductSliderView({ widget, device, draggable = true }: { widget: Extra
       await fetch(`/api/stores/${slug}/cart`, { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
       // ניתן להוסיף Toast/רענון מונה עגלה כאן
     } catch {}
+  }
+
+  // טעינת גלריות צבעים מהשרת
+  async function loadProductColorGalleries(productId: string | number, colorValue: string) {
+    if (!slug || !useApi) return null
+    
+    const productKey = String(productId)
+    
+    // אם כבר טוענים, לא נטען שוב
+    if (loadingGalleries.has(productKey)) return null
+    
+    try {
+      setLoadingGalleries(prev => new Set(prev).add(productKey))
+      
+      const response = await fetch(`/api/stores/${slug}/product-galleries?product_id=${productId}`, {
+        method: 'GET',
+        credentials: 'include'
+      })
+      
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}`)
+      }
+      
+      const data = await response.json()
+      
+      if (data.success && data.data) {
+        const { value_galleries, gallery_settings } = data.data
+        
+        // מחפש גלריה לצבע הנבחר
+        let colorGallery = null
+        if (value_galleries && gallery_settings?.selected_option) {
+          const selectedOption = gallery_settings.selected_option // כנראה "צבע"
+          const optionGalleries = value_galleries[selectedOption]
+          
+          if (optionGalleries && optionGalleries[colorValue]) {
+            colorGallery = optionGalleries[colorValue]
+          }
+        }
+        
+        if (colorGallery && colorGallery.images && colorGallery.images.length > 0) {
+          const mainImage = colorGallery.images[0]
+          const galleryImages = colorGallery.images
+          
+          setProductGalleries(prev => ({
+            ...prev,
+            [productKey]: {
+              currentImage: mainImage,
+              gallery: galleryImages,
+              selectedColor: colorValue
+            }
+          }))
+          
+          return { currentImage: mainImage, gallery: galleryImages }
+        }
+      }
+      
+      return null
+    } catch (error) {
+      console.error('Error loading color gallery:', error)
+      return null
+    } finally {
+      setLoadingGalleries(prev => {
+        const next = new Set(prev)
+        next.delete(productKey)
+        return next
+      })
+    }
   }
   return (
     <div>
@@ -869,7 +1086,10 @@ function ProductSliderView({ widget, device, draggable = true }: { widget: Extra
               const apiItem = (displayItems ?? []).find((p:any) => String(p.id) === String(id))
               const title = apiItem?.name ?? mock?.title ?? `מוצר #${id}`
               const href = apiItem?.product_url ?? mock?.href ?? '#'
-              const image = (apiItem?.images?.[0]) ?? mock?.image ?? `https://picsum.photos/seed/${id}/800/800`
+              // תמונה: תמונה מגלריית צבע נבחר או תמונה ברירת מחדל
+              const productKey = String(id)
+              const selectedGallery = productGalleries[productKey]
+              const image = selectedGallery?.currentImage ?? (apiItem?.images?.[0]) ?? mock?.image ?? `https://picsum.photos/seed/${id}/800/800`
               // מחיר: חישוב מינימום לפי וריאציות או שדות מוצר
               const priceMeta = (() => {
                 const p:any = apiItem
@@ -886,17 +1106,25 @@ function ProductSliderView({ widget, device, draggable = true }: { widget: Extra
               })()
               const isSale = (priceMeta.sale ?? Infinity) < (priceMeta.reg ?? Infinity)
               // סוואצ'ים: לפי options.display_type==='color' או לפי variants[].color_code
-              const allColors: string[] = (() => {
+              const allColors: Array<{code: string, name: string}> = (() => {
                 const p:any = apiItem
-                const set = new Set<string>()
+                const colorMap = new Map<string, string>() // code -> name
                 if (p?.options) {
                   const colorOpt = (p.options as any[]).find(o => (o.display_type === 'color'))
-                  colorOpt?.values?.forEach((v:any) => { if (v?.color_code) set.add(v.color_code) })
+                  colorOpt?.values?.forEach((v:any) => { 
+                    if (v?.color_code && v?.name) {
+                      colorMap.set(v.color_code, v.name)
+                    }
+                  })
                 }
                 if (p?.variants) {
-                  (p.variants as any[]).forEach(v => { if (v?.color_code) set.add(v.color_code) })
+                  (p.variants as any[]).forEach(v => { 
+                    if (v?.color_code && v?.options?.['צבע']) {
+                      colorMap.set(v.color_code, v.options['צבע'])
+                    }
+                  })
                 }
-                return Array.from(set).slice(0, 6)
+                return Array.from(colorMap.entries()).map(([code, name]) => ({code, name})).slice(0, 6)
               })()
               const maxShowColors = 5
               const colorSwatches = allColors.slice(0, maxShowColors)
@@ -937,8 +1165,33 @@ function ProductSliderView({ widget, device, draggable = true }: { widget: Extra
                       {card.showWishlist && (
                         <button
                           type="button"
-                          className="absolute top-2 left-2 w-7 h-7 bg-white/90 hover:bg-white rounded-full flex items-center justify-center text-zinc-700"
-                          onClick={(e) => { e.preventDefault(); toggleWishlist(id) }}
+                          className={`qs-wishlist-btn ${wishlist.has(String(id)) ? 'text-red-500' : 'text-gray-600'}`}
+                          onClick={(e) => { 
+                            e.preventDefault(); 
+                            if (!draggable) {
+                              // השתמש במערכת הגלובלית ישירות
+                              if (typeof (window as any).toggleWishlist === 'function') {
+                                try {
+                                  // יצירת אירוע DOM אמיתי
+                                  const nativeEvent = {
+                                    preventDefault: () => {},
+                                    stopPropagation: () => {},
+                                    stopImmediatePropagation: () => {},
+                                    currentTarget: e.currentTarget,
+                                    target: e.currentTarget
+                                  }
+                                  ;(window as any).toggleWishlist(id, nativeEvent)
+                                } catch (error) {
+                                  console.error('Error calling global toggleWishlist:', error)
+                                  // fallback למערכת מקומית
+                                  toggleWishlist(id)
+                                }
+                              } else {
+                                // fallback למערכת מקומית
+                                toggleWishlist(id)
+                              }
+                            }
+                          }}
                         >
                           <span className="text-xs">{wishlist.has(String(id)) ? '♥' : '♡'}</span>
                         </button>
@@ -969,16 +1222,77 @@ function ProductSliderView({ widget, device, draggable = true }: { widget: Extra
                         )
                       })()}
                       {/* סוואצ'ים/אופציות */}
-                      {card.showColors !== false && Array.isArray(colorSwatches) && colorSwatches.length > 0 && (
-                        <div className={`flex gap-1 mt-2 w-full`} style={{ justifyContent: justifyCss(card.contentAlign) }}>
-                          {colorSwatches.map((c, i) => (
-                            <span key={i} className="inline-block w-3.5 h-3.5 rounded border" style={{ background: c }} />
-                          ))}
-                          {moreColors > 0 && (
-                            <span className="inline-flex w-3.5 h-3.5 rounded border text-[9px] items-center justify-center bg-zinc-100 text-zinc-600">+{moreColors}</span>
-                          )}
-                        </div>
-                      )}
+                      {card.showColors !== false && Array.isArray(colorSwatches) && colorSwatches.length > 0 && (() => {
+                        const maxVisible = card.maxVisibleColors || 5
+                        const visibleColors = colorSwatches.slice(0, maxVisible)
+                        const hiddenColors = colorSwatches.slice(maxVisible)
+                        const colorSize = card.colorSize || 14
+                        const isCircle = (card.colorShape || 'circle') === 'circle'
+                        const productKey = String(id)
+                        const showAllColors = expandedColors[productKey] || false
+                        
+                        return (
+                          <div className={`flex gap-1 mt-2 w-full flex-wrap`} style={{ justifyContent: justifyCss(card.contentAlign) }}>
+                            {(showAllColors ? colorSwatches : visibleColors).map((colorObj, i) => {
+                              const productKey = String(id)
+                              const selectedGallery = productGalleries[productKey]
+                              const colorValue = colorObj.name // השם האמיתי של הצבע
+                              const isSelected = selectedGallery?.selectedColor === colorValue
+                              const isLoading = loadingGalleries.has(productKey)
+                              
+                              return (
+                              <button
+                                key={i}
+                                type="button"
+                                className={`inline-block border hover:border-zinc-400 transition-colors ${isCircle ? 'rounded-full' : 'rounded'} ${isSelected ? 'ring-2 ring-blue-500' : ''} ${isLoading ? 'opacity-50' : ''}`}
+                                style={{ 
+                                  background: colorObj.code, 
+                                  width: `${colorSize}px`, 
+                                  height: `${colorSize}px`,
+                                  minWidth: `${colorSize}px`,
+                                  cursor: draggable ? 'default' : 'pointer'
+                                }}
+                                onClick={async (e) => {
+                                  e.preventDefault()
+                                  if (!draggable && slug) {
+                                    // טען גלריית צבע במקום לנווט לעמוד המוצר
+                                    const gallery = await loadProductColorGalleries(id, colorValue)
+                                    
+                                    // אם לא הצליח לטעון גלריה, נווט לעמוד המוצר (fallback)
+                                    if (!gallery) {
+                                      const productUrl = `${href}?color=${encodeURIComponent(colorObj.code)}`
+                                      window.location.href = productUrl
+                                    }
+                                  }
+                                }}
+                                title={colorObj.name}
+                              />
+                              )
+                            })}
+                            {!showAllColors && hiddenColors.length > 0 && (
+                              <button
+                                type="button"
+                                className={`inline-flex border text-[9px] items-center justify-center bg-zinc-100 text-zinc-600 hover:bg-zinc-200 transition-colors ${isCircle ? 'rounded-full' : 'rounded'}`}
+                                style={{ 
+                                  width: `${colorSize}px`, 
+                                  height: `${colorSize}px`,
+                                  minWidth: `${colorSize}px`,
+                                  cursor: draggable ? 'default' : 'pointer'
+                                }}
+                                onClick={(e) => {
+                                  e.preventDefault()
+                                  if (!draggable) {
+                                    setExpandedColors(prev => ({ ...prev, [productKey]: true }))
+                                  }
+                                }}
+                                title={`עוד ${hiddenColors.length} צבעים`}
+                              >
+                                +{hiddenColors.length}
+                              </button>
+                            )}
+                          </div>
+                        )
+                      })()}
                       {card.showSizes && Array.isArray(textOptions) && textOptions.length > 0 && (
                         <div className={`flex gap-1 mt-2 flex-wrap w-full`} style={{ justifyContent: justifyCss(card.contentAlign) }}>
                           {textOptions.map((t, i) => (
