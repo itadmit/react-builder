@@ -4,6 +4,7 @@ import '../index.css'
 import { WidgetRenderer } from '@/ui/builder/WidgetRenderer'
 import { useState } from 'react'
 import type { PageSchema, StyleValues } from '@/types/builder'
+import { useBuilderStore } from '@/store/useBuilderStore'
 
 function PreviewApp() {
   const bootstrap = (window as any).__PREVIEW_BOOTSTRAP__
@@ -14,6 +15,21 @@ function PreviewApp() {
   // Fallback אם מגיע בפורמט { components }
   const sections = (page?.sections ?? [])
   if (!page) return <div className="p-8 text-center text-sm text-zinc-500">אין נתוני תצוגה. פתחו מהבילדר או הטעינו דרך השרת.</div>
+
+  // סנכרון breakpoint -> store.device כדי שהרינדור יהיה רספונסיבי (למשל בסליידר מוצרים)
+  React.useEffect(() => {
+    const setDevice = useBuilderStore.getState().setDevice
+    const compute = () => {
+      const w = window.innerWidth
+      if (w < 768) return 'mobile' as const
+      if (w < 1024) return 'tablet' as const
+      return 'desktop' as const
+    }
+    const apply = () => setDevice(compute())
+    apply()
+    window.addEventListener('resize', apply)
+    return () => window.removeEventListener('resize', apply)
+  }, [])
   function styleToCss(style?: StyleValues): React.CSSProperties {
     const margin = style?.margin
     const padding = style?.padding
