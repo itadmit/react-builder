@@ -846,7 +846,7 @@ function ProductSliderView({ widget, device, draggable = true }: { widget: Extra
       <div className="font-semibold mb-2">{widget.title ?? 'סליידר מוצרים'}</div>
       <div className="relative">
         <div
-          className="overflow-x-auto scroll-smooth snap-x snap-proximity"
+          className="overflow-x-auto scroll-smooth snap-x snap-proximity no-scrollbar"
           ref={containerRef}
           style={{ WebkitOverflowScrolling: 'touch', overscrollBehaviorX: 'contain' as any, cursor: dragging ? 'grabbing' : 'grab' }}
           onMouseDown={(e)=>{
