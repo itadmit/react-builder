@@ -1440,6 +1440,24 @@ export function Inspector() {
               defaultOpen: true,
               children: (
                 <div className="space-y-3">
+                  <Field label="תמונת רקע" icon={<UploadCloud size={14} />}>
+                    <div className="flex gap-2">
+                      <TextInput
+                        value={selectedWidget.backgroundImage ?? ''}
+                        placeholder="URL תמונת רקע (או השאר ריק)"
+                        onChange={(e) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'banner') w.backgroundImage = e.target.value || undefined })}
+                      />
+                      {selectedWidget.backgroundImage && (
+                        <button
+                          className="btn btn-ghost btn-sm text-red-500 hover:bg-red-50"
+                          onClick={() => updateWidget(selectedWidget.id, (w) => { if (w.type === 'banner') w.backgroundImage = undefined })}
+                          title="מחק תמונת רקע"
+                        >
+                          ✕
+                        </button>
+                      )}
+                    </div>
+                  </Field>
                   <Field label="כותרת">
                     <TextInput
                       value={selectedWidget.heading ?? ''}
