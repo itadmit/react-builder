@@ -309,8 +309,9 @@ export function WidgetRenderer({ widget, sectionId, index, draggable = true }: {
           return (
             <div style={{ textAlign: (effectiveHoverStyle.textAlign as any) || 'right' }}>
               <a
-                href={w.href ?? '#'}
-                className={`inline-flex items-center gap-2`}
+                href={draggable ? undefined : (w.href ?? '#')}
+                onClick={draggable ? (e) => e.preventDefault() : undefined}
+                className={`inline-flex items-center gap-2 ${draggable ? 'pointer-events-none' : ''}`}
                 style={{ ...variantStyle, justifyContent: justify, display: 'inline-flex' }}
               >
                 {iconEl}
@@ -345,7 +346,11 @@ export function WidgetRenderer({ widget, sectionId, index, draggable = true }: {
               </div>
             </div>
           )}
-          <a href={w.linkHref ?? undefined}>
+          <a 
+            href={draggable ? undefined : (w.linkHref ?? undefined)}
+            onClick={draggable ? (e) => e.preventDefault() : undefined}
+            className={draggable ? 'pointer-events-none' : ''}
+          >
             <img
               src={imgSrc}
               alt={w.alt ?? ''}
@@ -377,7 +382,11 @@ export function WidgetRenderer({ widget, sectionId, index, draggable = true }: {
           {Array.isArray(imgs) && imgs.length === 0 && <div className="text-sm text-zinc-500">אין תמונות בגלריה</div>}
           {Array.isArray(imgs) && imgs.map((img) => (
             <figure key={img.id}>
-              <a href={img.linkHref ?? undefined}>
+              <a 
+                href={draggable ? undefined : (img.linkHref ?? undefined)}
+                onClick={draggable ? (e) => e.preventDefault() : undefined}
+                className={draggable ? 'pointer-events-none' : ''}
+              >
                 <img src={img.src} alt={img.alt ?? ''} className="w-full h-auto rounded" />
               </a>
               {img.caption && <figcaption className="mt-1 text-xs text-zinc-500">{img.caption}</figcaption>}
@@ -527,8 +536,89 @@ export function WidgetRenderer({ widget, sectionId, index, draggable = true }: {
                   {b.heading && <div className="mb-2" style={styleToCss(b.headingStyle)} dangerouslySetInnerHTML={{ __html: b.heading as string }} />}
                   {b.text && <div className="mb-3" style={styleToCss(b.textStyle)} dangerouslySetInnerHTML={{ __html: b.text as string }} />}
                   {b.ctaLabel && (
-                    <div className={`flex flex-wrap gap-2 ${ctaJustify}`}>
-                      <a href={b.ctaHref ?? '#'} className="inline-flex px-4 py-2 rounded" style={styleToCss(b.buttonStyle)}>
+                    <div className={`flex flex-wrap gap-2 ${(() => {
+                      const align = b.buttonAlign || pos.horizontal
+                      return align === 'start'
+                        ? (isRTL ? 'justify-end' : 'justify-start')
+                        : align === 'end'
+                          ? (isRTL ? 'justify-start' : 'justify-end')
+                          : 'justify-center'
+                    })()}`}>
+                      <a 
+                        href={draggable ? undefined : (b.ctaHref ?? '#')} 
+                        onClick={draggable ? (e) => e.preventDefault() : undefined}
+                        className={`inline-flex items-center justify-center ${draggable ? 'pointer-events-none' : ''} ${(() => {
+                          const variant = b.buttonVariant || 'filled'
+                          const computedStyle = styleToCss(b.buttonStyle)
+                          const normalize = (c?: string) => (c ?? '').toLowerCase().replace(/\s+/g, '')
+                          const isWhite = (c?: string) => {
+                            const n = normalize(c)
+                            return n === '#fff' || n === '#ffffff' || n === 'white' || n === 'rgb(255,255,255)' || n === 'rgba(255,255,255,1)'
+                          }
+                          const computedTextColor = variant === 'filled' ? (computedStyle.color as any) : (isWhite(computedStyle.color as any) || !computedStyle.color ? '#111111' : (computedStyle.color as any))
+                          
+                          if (variant === 'outline') {
+                            return 'border'
+                          }
+                          if (variant === 'underline') {
+                            return 'underline'
+                          }
+                          if (variant === 'text') {
+                            return ''
+                          }
+                          return ''
+                        })()} ${b.buttonWidth === 'full' ? 'w-full' : ''}`}
+                        style={(() => {
+                          const baseStyle = styleToCss(b.buttonStyle)
+                          const variant = b.buttonVariant || 'filled'
+                          const normalize = (c?: string) => (c ?? '').toLowerCase().replace(/\s+/g, '')
+                          const isWhite = (c?: string) => {
+                            const n = normalize(c)
+                            return n === '#fff' || n === '#ffffff' || n === 'white' || n === 'rgb(255,255,255)' || n === 'rgba(255,255,255,1)'
+                          }
+                          const computedTextColor = variant === 'filled' ? (baseStyle.color as any) : (isWhite(baseStyle.color as any) || !baseStyle.color ? '#111111' : (baseStyle.color as any))
+                          
+                          const basePadding = {
+                            paddingTop: baseStyle.paddingTop ?? 8,
+                            paddingBottom: baseStyle.paddingBottom ?? 8,
+                            paddingLeft: baseStyle.paddingLeft ?? 16,
+                            paddingRight: baseStyle.paddingRight ?? 16,
+                          }
+                          
+                          if (variant === 'filled') {
+                            return { ...baseStyle, ...basePadding }
+                          }
+                          if (variant === 'outline') {
+                            return { 
+                              ...baseStyle, 
+                              ...basePadding,
+                              background: 'transparent', 
+                              color: computedTextColor,
+                              borderColor: baseStyle.borderColor ?? computedTextColor ?? '#111',
+                              borderWidth: baseStyle.borderWidth ?? 1,
+                              borderStyle: baseStyle.borderStyle ?? 'solid',
+                            }
+                          }
+                          if (variant === 'underline') {
+                            return { 
+                              ...baseStyle,
+                              background: 'transparent',
+                              color: computedTextColor,
+                              textDecoration: 'underline',
+                              padding: '4px 0',
+                            }
+                          }
+                          if (variant === 'text') {
+                            return { 
+                              ...baseStyle,
+                              background: 'transparent',
+                              color: computedTextColor,
+                              padding: '4px 0',
+                            }
+                          }
+                          return { ...baseStyle, ...basePadding }
+                        })()}
+                      >
                         {b.ctaLabel}
                       </a>
                     </div>
@@ -550,7 +640,7 @@ export function WidgetRenderer({ widget, sectionId, index, draggable = true }: {
         </div>
       )}
       {widget.type === 'productSlider' && (
-        <ProductSliderView widget={widget as Extract<Widget, { type: 'productSlider' }>} device={device} />
+        <ProductSliderView widget={widget as Extract<Widget, { type: 'productSlider' }>} device={device} draggable={draggable} />
       )}
       {widget.type === 'html' && (
         <div dangerouslySetInnerHTML={{ __html: ((widget as Extract<Widget, { type: 'html' }>).html as string) }} />
@@ -609,7 +699,7 @@ export function WidgetRenderer({ widget, sectionId, index, draggable = true }: {
   )
 }
 
-function ProductSliderView({ widget, device }: { widget: Extract<Widget, { type: 'productSlider' }>; device: 'desktop' | 'tablet' | 'mobile' }) {
+function ProductSliderView({ widget, device, draggable = true }: { widget: Extract<Widget, { type: 'productSlider' }>; device: 'desktop' | 'tablet' | 'mobile'; draggable?: boolean }) {
   const containerRef = useRef<HTMLDivElement | null>(null)
   const [items, setItems] = useState<any[] | null>(widget.products ?? null)
   const [wishlist, setWishlist] = useState<Set<string>>(() => new Set<string>())
@@ -715,7 +805,7 @@ function ProductSliderView({ widget, device }: { widget: Extract<Widget, { type:
     el.scrollTo({ left: page * width, behavior: 'smooth' })
   }, [page])
 
-  const ratio = (widget as any).imageRatio || '4/5'
+  const ratio = (widget as any).imageRatio || '6/9'
   const card = (widget as any).cardOptions || {}
   // Wishlist toggle
   async function toggleWishlist(productId: string | number) {
@@ -833,7 +923,11 @@ function ProductSliderView({ widget, device }: { widget: Extract<Widget, { type:
               return (
                 <div key={id} className="shrink-0 snap-start px-2" style={{ flex: `0 0 ${cardBasisPercent}%`, minWidth: `${cardBasisPercent}%` }}>
                   {(() => { const cardBorder = (card.showCardBorder === true) ? 'border' : ''; return (
-                  <a href={href} className={`block ${cardBorder} rounded overflow-hidden`}>
+                  <a 
+                  href={draggable ? undefined : href} 
+                  onClick={draggable ? (e) => e.preventDefault() : undefined}
+                  className={`block ${cardBorder} rounded overflow-hidden ${draggable ? 'pointer-events-none' : ''}`}
+                >
                     <div className="relative bg-zinc-100 overflow-hidden" style={{ aspectRatio: ratio.replace('/', ' / ') }}>
                       {image ? <img src={image} loading="lazy" className="w-full h-full object-cover" /> : <div className="w-full h-full bg-zinc-200 animate-pulse" />}
                       {/* באדג'ים */}

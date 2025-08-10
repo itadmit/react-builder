@@ -1286,12 +1286,12 @@ export function Inspector() {
                   </Field>
                   <div className="settings-hr" />
                   <div className="grid grid-cols-2 gap-2">
-                    <Field label="רשיו תמונה">
-                      <Select value={selectedWidget.type==='productSlider' ? String(((selectedWidget as any).imageRatio ?? '4/5')) : '4/5'} onChange={(e)=>updateWidget(selectedWidget.id, (w)=>{ if (w.type==='productSlider') (w as any).imageRatio = e.target.value })}>
-                        <option value="1/1">1:1</option>
-                        <option value="4/5">4:5</option>
-                        <option value="3/4">3:4</option>
-                        <option value="16/9">16:9</option>
+                    <Field label="רטיו תמונה">
+                      <Select value={selectedWidget.type==='productSlider' ? String(((selectedWidget as any).imageRatio ?? '6/9')) : '6/9'} onChange={(e)=>updateWidget(selectedWidget.id, (w)=>{ if (w.type==='productSlider') (w as any).imageRatio = e.target.value })}>
+                        <option value="1/1">ריבוע (1:1)</option>
+                        <option value="3/4">פורטרט (3:4)</option>
+                        <option value="6/9">גבוה (6:9)</option>
+                        <option value="9/16">מאוך גבוה (9:16)</option>
                       </Select>
                     </Field>
                     <Field label="מסגרת כרטיס">
@@ -1469,6 +1469,79 @@ export function Inspector() {
                         onChange={(e) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'banner') w.ctaHref = e.target.value || undefined })}
                       />
                     </Field>
+                  </div>
+                </div>
+              )
+            },
+            {
+              id: 'banner-button-controls',
+              title: 'הגדרות כפתור',
+              children: (
+                <div className="space-y-3">
+                  <div className="grid grid-cols-2 gap-2">
+                    <Field label="רוחב" icon={<Frame size={14} /> }>
+                      <Select value={selectedWidget.buttonWidth || 'auto'} onChange={(e) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'banner') w.buttonWidth = e.target.value as any })}>
+                        <option value="auto">רגיל</option>
+                        <option value="full">רוחב מלא</option>
+                      </Select>
+                    </Field>
+                    <Field label="יישור" icon={<AlignRight size={14} /> }>
+                      <Select
+                        value={selectedWidget.buttonAlign || 'center'}
+                        onChange={(e) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'banner') w.buttonAlign = e.target.value as any })}
+                      >
+                        <option value="right">ימין</option>
+                        <option value="center">מרכז</option>
+                        <option value="left">שמאל</option>
+                      </Select>
+                    </Field>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Field label="סגנון" icon={<Square size={14} /> }>
+                       <Select
+                         value={selectedWidget.buttonVariant || 'filled'}
+                         onChange={(e) => updateWidget(selectedWidget.id, (w) => {
+                           if (w.type === 'banner') {
+                             const next = e.target.value as any
+                             w.buttonVariant = next
+                             // אם עוברים מסגנון מלא לסגנון שאינו מלא והטקסט לבן – שנה לשחור כהה לנגישות
+                             const color = (w.buttonStyle?.color ?? '').toString().toLowerCase().replace(/\s+/g,'')
+                             const isWhite = color === '#fff' || color === '#ffffff' || color === 'white' || color === 'rgb(255,255,255)' || color === 'rgba(255,255,255,1)'
+                             if (next !== 'filled' && (!w.buttonStyle?.color || isWhite)) {
+                               w.buttonStyle = { ...(w.buttonStyle ?? {}), color: '#111111' }
+                             }
+                           }
+                         })}
+                       >
+                         <option value="filled">מלא</option>
+                         <option value="outline">מתאר</option>
+                         <option value="text">טקסט בלבד</option>
+                         <option value="underline">טקסט עם קו תחתון</option>
+                       </Select>
+                     </Field>
+                     <Field label="עיגול פינות (px)" icon={<Circle size={14} /> }>
+                       <NumberInputUI
+                         value={(selectedWidget.buttonStyle?.borderRadius ?? '' as any)}
+                         onChange={(e) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'banner') w.buttonStyle = { ...(w.buttonStyle ?? {}), borderRadius: (e.target as HTMLInputElement).value === '' ? undefined : Number((e.target as HTMLInputElement).value) } })}
+                       />
+                     </Field>
+                  </div>
+                  <div className="settings-group space-y-2">
+                    <div className="settings-title">פדינג כפתור</div>
+                    <div className="grid grid-cols-4 gap-2">
+                      {(['top','right','bottom','left'] as const).map((side) => (
+                        <Field
+                          key={`banner-btn-pad-${side}`}
+                          label={{ top: 'עליון', right: 'ימין', bottom: 'תחתון', left: 'שמאל' }[side]}
+                          icon={{ top: <ArrowUp size={12} />, right: <ArrowRight size={12} />, bottom: <ArrowDown size={12} />, left: <ArrowLeft size={12} /> }[side]}
+                        >
+                          <NumberInputUI
+                            value={selectedWidget.buttonStyle?.padding?.[side] ?? '' as any}
+                            onChange={(e) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'banner') w.buttonStyle = { ...(w.buttonStyle ?? {}), padding: { ...(w.buttonStyle?.padding ?? {}), [side]: (e.target as HTMLInputElement).value === '' ? undefined : Number((e.target as HTMLInputElement).value) } } })}
+                          />
+                        </Field>
+                      ))}
+                    </div>
                   </div>
                 </div>
               )
@@ -1765,6 +1838,12 @@ export function Inspector() {
                     <NumberInput label="טקסט משקל" value={selectedWidget.textStyle?.fontWeight as any} onChange={(v) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'banner') w.textStyle = { ...(w.textStyle ?? {}), fontWeight: v } })} />
                     <NumberInput label="טקסט גובה שורה" value={selectedWidget.textStyle?.lineHeight as any} onChange={(v) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'banner') w.textStyle = { ...(w.textStyle ?? {}), lineHeight: v } })} />
                     <ColorInput label="טקסט צבע" value={selectedWidget.textStyle?.color} onChange={(v) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'banner') w.textStyle = { ...(w.textStyle ?? {}), color: v } })} />
+                  </div>
+                  <div className="flex flex-wrap items-center gap-3">
+                    <NumberInput label="כפתור גודל" value={selectedWidget.buttonStyle?.fontSize as any} onChange={(v) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'banner') w.buttonStyle = { ...(w.buttonStyle ?? {}), fontSize: v } })} />
+                    <NumberInput label="כפתור משקל" value={selectedWidget.buttonStyle?.fontWeight as any} onChange={(v) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'banner') w.buttonStyle = { ...(w.buttonStyle ?? {}), fontWeight: v } })} />
+                    <NumberInput label="כפתור גובה שורה" value={selectedWidget.buttonStyle?.lineHeight as any} onChange={(v) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'banner') w.buttonStyle = { ...(w.buttonStyle ?? {}), lineHeight: v } })} />
+                    <NumberInput label="כפתור ריווח אותיות" value={selectedWidget.buttonStyle?.letterSpacing as any} onChange={(v) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'banner') w.buttonStyle = { ...(w.buttonStyle ?? {}), letterSpacing: v } })} />
                   </div>
                 </div>
               )

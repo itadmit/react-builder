@@ -206,6 +206,10 @@ export type BannerWidget = WidgetCommon & {
   textStyle?: StyleValues
   buttonStyle?: StyleValues
   buttonHoverStyle?: StyleValues
+  // Button layout controls
+  buttonWidth?: 'auto' | 'full'
+  buttonAlign?: Alignment
+  buttonVariant?: 'filled' | 'outline' | 'text' | 'underline'
 }
 
 export type MarqueeWidget = WidgetCommon & {
