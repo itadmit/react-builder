@@ -1255,7 +1255,7 @@ export function Inspector() {
                     <Select
                       value={selectedWidget.type === 'productSlider' ? String((selectedWidget as any).categoryId ?? '') : ''}
                       onFocus={(e) => { /* lazy fetch categories */ (async () => {
-                        const slug = (window as any).__PREVIEW_BOOTSTRAP__?.storeSlug || (window as any).STORE_DATA?.slug
+                        const slug = useBuilderStore.getState().storeSlug || (window as any).__BUILDER_BOOTSTRAP__?.storeSlug || (window as any).__PREVIEW_BOOTSTRAP__?.storeSlug || (window as any).STORE_DATA?.slug
                         if (!(window as any).__QS_CATEGORIES__ && slug) {
                           try { const res = await fetch(`/api/stores/${slug}/categories`, { credentials: 'include' }); const data = await res.json(); (window as any).__QS_CATEGORIES__ = Array.isArray(data?.data) ? data.data : (Array.isArray(data) ? data : []); } catch {}
                         }

@@ -613,7 +613,7 @@ function ProductSliderView({ widget, device }: { widget: Extract<Widget, { type:
   const containerRef = useRef<HTMLDivElement | null>(null)
   const [items, setItems] = useState<any[] | null>(widget.products ?? null)
   const [wishlist, setWishlist] = useState<Set<string>>(() => new Set<string>())
-  const slug = (window as any).__PREVIEW_BOOTSTRAP__?.storeSlug || (window as any).STORE_DATA?.slug
+  const slug = useBuilderStore.getState().storeSlug || (window as any).__BUILDER_BOOTSTRAP__?.storeSlug || (window as any).__PREVIEW_BOOTSTRAP__?.storeSlug || (window as any).STORE_DATA?.slug
   const useApi = !!slug && (!!(widget as any).categoryId || !!widget.categoryIds?.length || !!widget.productIds?.length)
   // טעינת Wishlist התחלתית
   useEffect(() => {

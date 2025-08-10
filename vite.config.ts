@@ -26,9 +26,11 @@ export default defineConfig(({ mode }) => ({
         preview: path.resolve(__dirname, 'src/preview/main.tsx'),
       },
       output: {
+        // שמירה על שמות קבועים לקבצי כניסה לשילוב ב-PHP
         entryFileNames: '[name].js',
-        chunkFileNames: '[name].js',
-        assetFileNames: '[name][extname]',
+        // קבצי chunks פנימיים יקבלו hash כדי למנוע שגיאות קאש בין גרסאות
+        chunkFileNames: 'chunks/[name]-[hash].js',
+        assetFileNames: 'assets/[name]-[hash][extname]',
       },
     },
   },
