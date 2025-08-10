@@ -1003,6 +1003,21 @@ export function Inspector() {
                       onChange={(e) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'productSlider') w.slidesPerView = { ...(w.slidesPerView ?? {}), desktop: Number((e.target as HTMLInputElement).value || 0) } })}
                     />
                   </Field>
+                  <div className="grid grid-cols-3 gap-3">
+                    <Field label="קטגוריות (מופרד בפסיקים)">
+                      <TextInput
+                        placeholder="1,2,3"
+                        value={selectedWidget.type === 'productSlider' ? ((selectedWidget.categoryIds as any)?.join?.(',') ?? '') : ''}
+                        onChange={(e) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'productSlider') w.categoryIds = e.target.value.split(',').map(v=>v.trim()).filter(Boolean) as any })}
+                      />
+                    </Field>
+                    <Field label="Limit">
+                      <NumberInputUI
+                        value={selectedWidget.type === 'productSlider' ? (selectedWidget.limit ?? 12) as any : 12 as any}
+                        onChange={(e) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'productSlider') w.limit = Number((e.target as HTMLInputElement).value || 0) })}
+                      />
+                    </Field>
+                  </div>
                   <Field label="בטאבלט">
                     <NumberInputUI
                       value={selectedWidget.type === 'productSlider' ? (selectedWidget.slidesPerView?.tablet ?? 2) : 2}

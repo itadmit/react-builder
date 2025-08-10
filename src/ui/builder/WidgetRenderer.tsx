@@ -508,9 +508,31 @@ export function WidgetRenderer({ widget, sectionId, index, draggable = true }: {
 
 function ProductSliderView({ widget, device }: { widget: Extract<Widget, { type: 'productSlider' }>; device: 'desktop' | 'tablet' | 'mobile' }) {
   const containerRef = useRef<HTMLDivElement | null>(null)
-  const slides = (widget.products && widget.products.length
-    ? widget.products.map((p) => p.id)
-    : (widget.productIds && widget.productIds.length ? widget.productIds : ['1', '2', '3', '4', '5'])) as string[]
+  const [items, setItems] = useState<any[] | null>(widget.products ?? null)
+  const slug = (window as any).__PREVIEW_BOOTSTRAP__?.storeSlug || (window as any).STORE_DATA?.slug
+  const useApi = !!slug && (!!widget.categoryIds?.length || !!widget.productIds?.length)
+  useEffect(() => {
+    if (!useApi) return
+    const limit = widget.limit ?? 12
+    const qs: string[] = [`limit=${limit}`]
+    if (widget.categoryIds && widget.categoryIds.length) qs.push(`category_id=${(widget.categoryIds as any).join(',')}`)
+    // אופציונלי: אם ירצו ids ספציפיים
+    if (widget.productIds && widget.productIds.length) qs.push(`ids=${widget.productIds.join(',')}`)
+    const url = `/api/stores/${slug}/products?` + qs.join('&')
+    setItems(null)
+    fetch(url, { credentials: 'include' })
+      .then(r => r.json())
+      .then((res) => {
+        const data = (res?.data ?? res) as any[]
+        setItems(Array.isArray(data) ? data : [])
+      })
+      .catch(() => setItems([]))
+  }, [slug, useApi, JSON.stringify(widget.categoryIds), JSON.stringify(widget.productIds), widget.limit])
+  const slides = (items && items.length
+    ? items.map((p:any) => String(p.id))
+    : (widget.products && widget.products.length
+      ? widget.products.map((p) => p.id)
+      : (widget.productIds && widget.productIds.length ? widget.productIds : ['1', '2', '3', '4', '5']))) as string[]
   const perView = widget.slidesPerView?.[device] ?? 4
   const pageCount = Math.max(1, Math.ceil(slides.length / perView))
   const [page, setPage] = useState(0)
@@ -537,19 +559,28 @@ function ProductSliderView({ widget, device }: { widget: Extract<Widget, { type:
         <div className="overflow-x-auto scroll-smooth snap-x snap-mandatory" ref={containerRef}>
           <div className="flex" style={{ width: `${(slides.length / perView) * 100}%` }}>
             {slides.map((id, idx) => {
-              const mock = (widget.products ?? []).find((p) => p.id === id)
-              const title = mock?.title ?? `מוצר #${id}`
-              const href = mock?.href ?? '#'
-              const image = mock?.image ?? `https://picsum.photos/seed/${id}/400/300`
-              const price = mock?.price
+              const mock = (widget.products ?? []).find((p) => String(p.id) === String(id))
+              const apiItem = (items ?? []).find((p:any) => String(p.id) === String(id))
+              const title = apiItem?.name ?? mock?.title ?? `מוצר #${id}`
+              const href = apiItem?.product_url ?? mock?.href ?? '#'
+              const image = (apiItem?.images?.[0]) ?? mock?.image ?? `https://picsum.photos/seed/${id}/400/300`
+              const price = (() => {
+                const p:any = apiItem
+                if (!p) return mock?.price
+                if (p.type === 'variable' && Array.isArray(p.variants) && p.variants.length) {
+                  const min = Math.min(...p.variants.map((v:any) => Number(v.sale_price ?? v.regular_price ?? Infinity)))
+                  return Number.isFinite(min) ? min : undefined
+                }
+                return Number(p.sale_price ?? p.regular_price ?? NaN)
+              })()
               return (
                 <div key={id} className="shrink-0 snap-start px-2" style={{ width: `${100 / perView}%` }}>
                   <a href={href} className="block border rounded p-3">
                     <div className="aspect-video bg-zinc-100 rounded mb-2 overflow-hidden">
-                      <img src={image} className="w-full h-full object-cover" />
+                      {image ? <img src={image} className="w-full h-full object-cover" /> : <div className="w-full h-full bg-zinc-200 animate-pulse" />}
                     </div>
                     <div className="text-sm font-medium line-clamp-2">{title}</div>
-                    {price !== undefined && <div className="text-xs text-zinc-600 mt-1">₪{price}</div>}
+                    {price !== undefined && Number.isFinite(price as any) && <div className="text-xs text-zinc-600 mt-1">₪{price}</div>}
                   </a>
                 </div>
               )
