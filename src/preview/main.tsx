@@ -13,7 +13,7 @@ function PreviewApp() {
   const [data] = useState<any>(() => bootstrap || (() => { try { const raw = localStorage.getItem(localKey); return raw ? JSON.parse(raw) : null } catch { return null } })() || (window as any).STORE_DATA || {})
   const page: PageSchema | undefined = data?.page || (data?.components ? { id: 'preview', name: 'עמוד', sections: data.components } as any : undefined)
   // Fallback אם מגיע בפורמט { components }
-  const sections = (page?.sections ?? [])
+  const sections = Array.isArray(page?.sections) ? page!.sections : []
   if (!page) return <div className="p-8 text-center text-sm text-zinc-500">אין נתוני תצוגה. פתחו מהבילדר או הטעינו דרך השרת.</div>
 
   // סנכרון breakpoint -> store.device כדי שהרינדור יהיה רספונסיבי (למשל בסליידר מוצרים)
@@ -81,8 +81,13 @@ function PreviewApp() {
             }}
           >
             <div className="w-full" style={(section.style?.maxWidth ?? '1140px') === '100%' ? { width: '100%' } : { maxWidth: section.style?.maxWidth ?? '1140px', marginLeft: 'auto', marginRight: 'auto' }}>
-              {section.widgets.map((w, idx) => (
-                <div key={w.id} className="py-1">
+              {(Array.isArray(section.widgets) ? section.widgets : []).map((w, idx) => (
+                <div key={w.id} className="py-1 relative">
+                  {/* סקלטון עדין רק לתמונות ולבאנר עד עלייה */}
+                  {/* ההחלפה בפועל נעשית בקומפוננטות עצמן, זה fallback כללי */}
+                  {(w.type === 'image' || w.type === 'banner') && (
+                    <div className="qs-skeleton-lite" aria-hidden />
+                  )}
                   <WidgetRenderer widget={w} sectionId={section.id} index={idx} draggable={false} />
                 </div>
               ))}

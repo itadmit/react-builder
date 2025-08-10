@@ -1326,13 +1326,24 @@ export function Inspector() {
                   
                 </div>
                 <div className="settings-hr" />
-                <div className="grid grid-cols-3 gap-3">
+                <div className="settings-group">
+                  <div className="settings-title">ניווט</div>
+                  <div className="grid grid-cols-3 gap-3 items-end">
                   <Field label="חצים">
                     <Checkbox
                       label="הצג חצים"
                       checked={selectedWidget.type === 'productSlider' ? !!selectedWidget.arrows : false}
                       onChange={(v) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'productSlider') w.arrows = v })}
                     />
+                  </Field>
+                  <Field label="גודל חץ (px)">
+                    <NumberInputUI
+                      value={selectedWidget.type === 'productSlider' ? ((selectedWidget as any).arrowSize ?? 24) as any : 24 as any}
+                      onChange={(e) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'productSlider') (w as any).arrowSize = Number((e.target as HTMLInputElement).value || 0) })}
+                    />
+                  </Field>
+                  <Field label="צבע חץ">
+                    <input type="color" className="h-9 w-full rounded-md border" value={(selectedWidget as any).arrowColor ?? '#000000'} onChange={(e)=>updateWidget(selectedWidget.id,(w)=>{ if (w.type==='productSlider') (w as any).arrowColor = e.target.value })} />
                   </Field>
                   <Field label="נקודות">
                     <Checkbox
@@ -1348,6 +1359,7 @@ export function Inspector() {
                       onChange={(v) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'productSlider') w.autoplay = v })}
                     />
                   </Field>
+                  </div>
                 </div>
          
                 <div className="settings-hr" />

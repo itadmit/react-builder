@@ -117,15 +117,25 @@ body {
 .qs-skeleton {
   position: absolute;
   inset: 0;
+  /* דפולט לבילדר – שמרנו את דפוס הפסים אך נרכך מעט */
   background: repeating-linear-gradient(
     45deg,
-    rgba(124, 58, 237, 0.28) 0px,
-    rgba(124, 58, 237, 0.28) 12px,
-    rgba(255, 255, 255, 0.38) 12px,
-    rgba(255, 255, 255, 0.38) 24px
+    rgba(124, 58, 237, 0.18) 0px,
+    rgba(124, 58, 237, 0.18) 12px,
+    rgba(255, 255, 255, 0.42) 12px,
+    rgba(255, 255, 255, 0.42) 24px
   );
   background-size: 200% 100%;
   animation: qs-skel-move 24s linear infinite;
+}
+
+/* סקלטון עדין לפרונט/פריוויו – אפור נעים ללא טקסט */
+.qs-skeleton-lite {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(90deg, rgba(240,240,240,0.9) 0%, rgba(228,228,228,0.9) 50%, rgba(240,240,240,0.9) 100%);
+  background-size: 200% 100%;
+  animation: qs-skel-move 1.6s ease-in-out infinite;
 }
 
 @keyframes qs-skel-move {

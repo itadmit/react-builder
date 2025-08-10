@@ -374,8 +374,8 @@ export function WidgetRenderer({ widget, sectionId, index, draggable = true }: {
           const w = widget as Extract<Widget, { type: 'gallery' }>
           const imgs = (w.images ?? []) as Array<{ id: string; src: string; alt?: string; caption?: string; linkHref?: string }>
           return <div className="grid" style={{ gridTemplateColumns: `repeat(${w.columns ?? 3}, minmax(0, 1fr))`, gap: w.gap ?? 12 }}>
-          {imgs.length === 0 && <div className="text-sm text-zinc-500">אין תמונות בגלריה</div>}
-          {imgs.map((img) => (
+          {Array.isArray(imgs) && imgs.length === 0 && <div className="text-sm text-zinc-500">אין תמונות בגלריה</div>}
+          {Array.isArray(imgs) && imgs.map((img) => (
             <figure key={img.id}>
               <a href={img.linkHref ?? undefined}>
                 <img src={img.src} alt={img.alt ?? ''} className="w-full h-auto rounded" />
@@ -614,7 +614,7 @@ function ProductSliderView({ widget, device }: { widget: Extract<Widget, { type:
   const [items, setItems] = useState<any[] | null>(widget.products ?? null)
   const [wishlist, setWishlist] = useState<Set<string>>(() => new Set<string>())
   const slug = useBuilderStore.getState().storeSlug || (window as any).__BUILDER_BOOTSTRAP__?.storeSlug || (window as any).__PREVIEW_BOOTSTRAP__?.storeSlug || (window as any).STORE_DATA?.slug
-  const useApi = !!slug && (!!(widget as any).categoryId || !!widget.categoryIds?.length || !!widget.productIds?.length)
+  const useApi = !!slug && (!!(widget as any).categoryId || !!(Array.isArray(widget.categoryIds) && widget.categoryIds.length) || !!(Array.isArray(widget.productIds) && widget.productIds.length))
   // טעינת Wishlist התחלתית
   useEffect(() => {
     if (!slug) return
@@ -634,9 +634,9 @@ function ProductSliderView({ widget, device }: { widget: Extract<Widget, { type:
     const qs: string[] = [`limit=${limit}`]
     const singleCat:any = (widget as any).categoryId
     if (singleCat) qs.push(`category_id=${singleCat}`)
-    else if (widget.categoryIds && widget.categoryIds.length) qs.push(`category_id=${(widget.categoryIds as any).join(',')}`)
+    else if (Array.isArray(widget.categoryIds) && widget.categoryIds.length) qs.push(`category_id=${(widget.categoryIds as any).join(',')}`)
     // אופציונלי: אם ירצו ids ספציפיים
-    if (widget.productIds && widget.productIds.length) qs.push(`ids=${widget.productIds.join(',')}`)
+    if (Array.isArray(widget.productIds) && widget.productIds.length) qs.push(`ids=${widget.productIds.join(',')}`)
     const url = `/api/stores/${slug}/products?` + qs.join('&')
     setItems(null)
     fetch(url, { credentials: 'include' })
@@ -676,15 +676,15 @@ function ProductSliderView({ widget, device }: { widget: Extract<Widget, { type:
     })
   }
 
-  const displayItems = (items && items.length
+  const displayItems = (items && Array.isArray(items) && items.length
     ? items
     : buildMockProducts(Math.max(4, widget.limit ?? 8)))
 
-  const slides = (displayItems && displayItems.length
+  const slides = (displayItems && Array.isArray(displayItems) && displayItems.length
     ? displayItems.map((p:any) => String(p.id))
-    : (widget.products && widget.products.length
+    : (widget.products && Array.isArray(widget.products) && widget.products.length
       ? widget.products.map((p) => p.id)
-      : (widget.productIds && widget.productIds.length ? widget.productIds : ['1', '2', '3', '4', '5']))) as string[]
+      : (widget.productIds && Array.isArray(widget.productIds) && widget.productIds.length ? widget.productIds : ['1', '2', '3', '4', '5']))) as string[]
   const basePerView = (() => {
     const raw = widget.slidesPerView?.[device]
     if (raw === undefined || raw === null) return device === 'desktop' ? 4 : device === 'tablet' ? 2 : 1
@@ -694,8 +694,11 @@ function ProductSliderView({ widget, device }: { widget: Extract<Widget, { type:
   const peekExtra = device === 'mobile' ? 0.15 : 0 // מציגים “עוד קצת” במובייל
   const visibleCount = basePerView + peekExtra
   const cardBasisPercent = 100 / visibleCount
-  const pageCount = Math.max(1, Math.ceil(slides.length / Math.ceil(basePerView)))
+  const pageCount = Math.max(1, Math.ceil((Array.isArray(slides) ? slides.length : 0) / Math.ceil(basePerView)))
   const [page, setPage] = useState(0)
+  // Drag-to-scroll (גם בדסקטופ)
+  const [dragging, setDragging] = useState(false)
+  const dragState = useRef<{ startX: number; startLeft: number }>({ startX: 0, startLeft: 0 })
 
   useEffect(() => {
     if (!widget.autoplay) return
@@ -752,7 +755,24 @@ function ProductSliderView({ widget, device }: { widget: Extract<Widget, { type:
     <div>
       <div className="font-semibold mb-2">{widget.title ?? 'סליידר מוצרים'}</div>
       <div className="relative">
-        <div className="overflow-x-auto scroll-smooth snap-x snap-proximity" ref={containerRef} style={{ WebkitOverflowScrolling: 'touch', overscrollBehaviorX: 'contain' as any }}>
+        <div
+          className="overflow-x-auto scroll-smooth snap-x snap-proximity"
+          ref={containerRef}
+          style={{ WebkitOverflowScrolling: 'touch', overscrollBehaviorX: 'contain' as any, cursor: dragging ? 'grabbing' : 'grab' }}
+          onMouseDown={(e)=>{
+            const el = containerRef.current; if (!el) return
+            setDragging(true)
+            dragState.current = { startX: e.pageX, startLeft: el.scrollLeft }
+          }}
+          onMouseMove={(e)=>{
+            if (!dragging) return
+            const el = containerRef.current; if (!el) return
+            const dx = e.pageX - dragState.current.startX
+            el.scrollLeft = dragState.current.startLeft - dx
+          }}
+          onMouseUp={()=> setDragging(false)}
+          onMouseLeave={()=> setDragging(false)}
+        >
           <div className="flex flex-nowrap -mx-2 px-2">
             {slides.map((id, idx) => {
               const mock = (widget.products ?? []).find((p) => String(p.id) === String(id))
@@ -790,7 +810,7 @@ function ProductSliderView({ widget, device }: { widget: Extract<Widget, { type:
               })()
               const maxShowColors = 5
               const colorSwatches = allColors.slice(0, maxShowColors)
-              const moreColors = allColors.length - colorSwatches.length
+              const moreColors = (Array.isArray(allColors) ? allColors.length : 0) - (Array.isArray(colorSwatches) ? colorSwatches.length : 0)
               // אופציות טקסטואליות (למשל מידות)
               const textOptions: string[] = (() => {
                 const p:any = apiItem
@@ -855,7 +875,7 @@ function ProductSliderView({ widget, device }: { widget: Extract<Widget, { type:
                         )
                       })()}
                       {/* סוואצ'ים/אופציות */}
-                      {card.showColors !== false && colorSwatches.length > 0 && (
+                      {card.showColors !== false && Array.isArray(colorSwatches) && colorSwatches.length > 0 && (
                         <div className={`flex gap-1 mt-2 w-full`} style={{ justifyContent: justifyCss(card.contentAlign) }}>
                           {colorSwatches.map((c, i) => (
                             <span key={i} className="inline-block w-3.5 h-3.5 rounded border" style={{ background: c }} />
@@ -865,7 +885,7 @@ function ProductSliderView({ widget, device }: { widget: Extract<Widget, { type:
                           )}
                         </div>
                       )}
-                      {card.showSizes && textOptions.length > 0 && (
+                      {card.showSizes && Array.isArray(textOptions) && textOptions.length > 0 && (
                         <div className={`flex gap-1 mt-2 flex-wrap w-full`} style={{ justifyContent: justifyCss(card.contentAlign) }}>
                           {textOptions.map((t, i) => (
                             <span key={i} className="text-[10px] border rounded px-1.5 py-0.5 text-zinc-600">{t}</span>
@@ -882,18 +902,25 @@ function ProductSliderView({ widget, device }: { widget: Extract<Widget, { type:
         </div>
         {widget.arrows && (() => {
           const isRTL = typeof document !== 'undefined' && (document.dir === 'rtl' || document.documentElement.dir === 'rtl')
-          const prev = () => setPage((p) => Math.max(0, p - 1))
-          const next = () => setPage((p) => Math.min(pageCount - 1, p + 1))
+          const go = (dir: 'prev' | 'next') => {
+            const el = containerRef.current
+            if (!el) return
+            const step = (el.clientWidth * (cardBasisPercent / 100)) // רוחב כרטיס יחיד בפיקסלים
+            const delta = dir === 'prev' ? -step : step
+            el.scrollTo({ left: el.scrollLeft + delta, behavior: 'smooth' })
+          }
           // במצב RTL: המשמעות של חץ שמאל/ימין מתהפכת לציפיית המשתמש
-          const leftClick = isRTL ? next : prev
-          const rightClick = isRTL ? prev : next
+          const leftClick = () => go(isRTL ? 'next' : 'prev')
+          const rightClick = () => go(isRTL ? 'prev' : 'next')
+          const size = (widget as any).arrowSize ?? 24
+          const color = (widget as any).arrowColor ?? '#000'
           return (
             <>
-              <button className="absolute left-2 top-1/2 -translate-y-1/2 bg-white/80 rounded px-2 py-1 z-10" onClick={leftClick}>
-                ‹
+              <button type="button" className="absolute right-2 top-1/2 -translate-y-1/2 rounded px-2 py-1 z-10 pointer-events-auto" onClick={(e)=>{ e.preventDefault(); e.stopPropagation(); leftClick() }} style={{ color }}>
+                <span style={{ fontSize: size }}>‹</span>
               </button>
-              <button className="absolute right-2 top-1/2 -translate-y-1/2 bg-white/80 rounded px-2 py-1 z-10" onClick={rightClick}>
-                ›
+              <button type="button" className="absolute left-2 top-1/2 -translate-y-1/2 rounded px-2 py-1 z-10 pointer-events-auto" onClick={(e)=>{ e.preventDefault(); e.stopPropagation(); rightClick() }} style={{ color }}>
+                <span style={{ fontSize: size }}>›</span>
               </button>
             </>
           )

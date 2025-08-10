@@ -45,6 +45,33 @@ type BuilderActions = {
   redo: () => void
 }
 
+// Normalize helpers to harden against undefined arrays from server/new accounts
+function normalizeSections(sections: any[]): Section[] {
+  const safeSections = Array.isArray(sections) ? sections : []
+  return safeSections.map((section: any) => {
+    const normalized: Section = {
+      id: section?.id,
+      container: section?.container,
+      style: section?.style,
+      responsiveStyle: section?.responsiveStyle,
+      advanced: section?.advanced,
+      flex: section?.flex,
+      widgets: Array.isArray(section?.widgets) ? section.widgets : [],
+    } as any
+    // Normalize container widgets inside widgets list
+    normalized.widgets = normalized.widgets.map((w: any) => {
+      if (w?.type === 'container') {
+        const cols = Number(w.columns ?? 2)
+        const children = Array.isArray(w.columnsChildren) ? w.columnsChildren : []
+        const fixed = Array.from({ length: Math.max(1, cols) }, (_, i) => Array.isArray(children[i]) ? children[i] : [])
+        return { ...w, columns: cols, columnsChildren: fixed }
+      }
+      return w
+    })
+    return normalized
+  })
+}
+
 const initialPage: PageSchema = {
   id: nanoid(),
   name: 'עמוד בית חדש',
@@ -113,7 +140,7 @@ export const useBuilderStore = create<BuilderState & BuilderActions>()(
         if (data.updatedAt !== undefined) draft.updatedAt = data.updatedAt
         if (data.isPublished !== undefined) draft.isPublished = data.isPublished
         if (data.components) {
-          draft.page.sections = Array.isArray(data.components) ? data.components : []
+          draft.page.sections = normalizeSections(data.components as any)
         }
       }),
       false,

@@ -229,6 +229,8 @@ export type ProductSliderWidget = WidgetCommon & {
   arrows?: boolean
   dots?: boolean
   autoplay?: boolean
+  arrowSize?: number
+  arrowColor?: string
 }
 
 export type HtmlWidget = WidgetCommon & {
