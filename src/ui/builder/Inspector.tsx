@@ -4,7 +4,7 @@ import { useMemo, useState, useRef } from 'react'
 // הוסר ReactQuill/Quill – חוזרים לעורך בסיסי
 import { Field, TextInput, NumberInputUI, Select, ColorPicker } from '@/ui/controls/Controls'
 import { Accordion } from '@/ui/controls/Accordion'
-import { Type, Link2, Palette, AlignLeft, AlignCenter, AlignRight, Bold, Italic, Underline, List, Eye, EyeOff, TypeIcon, Frame, MoveVertical, MoveHorizontal, Circle, UploadCloud } from 'lucide-react'
+import { Type, Link2, Palette, AlignLeft, AlignCenter, AlignRight, Bold, Italic, Underline, List, Eye, EyeOff, TypeIcon, Frame, MoveVertical, MoveHorizontal, Circle, UploadCloud, Square, ArrowUp, ArrowRight, ArrowDown, ArrowLeft } from 'lucide-react'
 import { StyleControls } from './StyleControls'
 import { MousePointerSquareDashed, Edit3, Settings2 } from 'lucide-react'
 
@@ -13,6 +13,69 @@ function NumberInput({ label, value, onChange, icon }: { label: string; value?: 
     <Field label={label} icon={icon}>
       <NumberInputUI className="w-16 h-8" value={value ?? '' as any} onChange={(e) => onChange((e.target as HTMLInputElement).value === '' ? undefined : Number((e.target as HTMLInputElement).value))} />
     </Field>
+  )
+}
+
+function ManualProductsPicker({ widgetId, selectedIds }: { widgetId: string; selectedIds?: any[] }) {
+  const [q, setQ] = useState('')
+  const [results, setResults] = useState<any[] | null>(null)
+  const slug = (window as any).__PREVIEW_BOOTSTRAP__?.storeSlug || (window as any).STORE_DATA?.slug
+  const doSearch = async () => {
+    if (!slug || !q) { setResults([]); return }
+    const res = await fetch(`/api/stores/${slug}/products?q=${encodeURIComponent(q)}&limit=20`, { credentials: 'include' })
+    const data = await res.json()
+    setResults(Array.isArray(data?.data) ? data.data : (Array.isArray(data) ? data : []))
+  }
+  return (
+    <div className="flex-1 space-y-2">
+      <div className="flex gap-2">
+        <input className="border rounded px-2 py-1 text-xs w-full" placeholder="חפש מוצר..." value={q} onChange={(e)=>setQ(e.target.value)} />
+        <button className="btn btn-ghost" onClick={doSearch}>חפש</button>
+      </div>
+      {results && (
+        <div className="max-h-48 overflow-auto border rounded p-2 space-y-1">
+          {results.length === 0 ? <div className="text-xs text-zinc-500">אין תוצאות</div> : results.map((p:any) => (
+            <div key={p.id} className="flex items-center justify-between text-xs">
+              <div className="flex items-center gap-2">
+                <img src={p.images?.[0]} className="w-8 h-8 object-cover rounded" />
+                <span>{p.name}</span>
+              </div>
+              <button className="btn btn-ghost" onClick={() => useBuilderStore.getState().updateWidget(widgetId, (w) => {
+                if (w.type === 'productSlider') {
+                  const arr = [ ...((w as any).selectedProductIds ?? []) ]
+                  if (!arr.find((id:any) => String(id) === String(p.id))) arr.push(p.id)
+                  ;(w as any).selectedProductIds = arr
+                  ;(w as any).manualSelection = true
+                  w.productIds = arr.map(String)
+                  ;(w as any).selectedProductsMeta = [ ...((w as any).selectedProductsMeta ?? []) , { id: p.id, name: p.name, image: p.images?.[0] } ]
+                }
+              })}>הוסף</button>
+            </div>
+          ))}
+        </div>
+      )}
+      {selectedIds && selectedIds.length > 0 && (
+        <div className="space-y-1">
+          <div className="text-xs text-zinc-600">נבחרו (לפי סדר):</div>
+          {selectedIds.map((id:any, idx:number) => (
+            <div key={`${id}-${idx}`} className="flex items-center justify-between text-xs border rounded px-2 py-1">
+              <div className="flex items-center gap-2">
+                {(() => {
+                  const meta = (useBuilderStore.getState().getWidgetById?.(widgetId) as any)?.selectedProductsMeta as any[] | undefined
+                  const found = meta?.find(m => String(m.id) === String(id))
+                  return found ? <><img src={found.image} className="w-6 h-6 object-cover rounded" /><span>{found.name}</span></> : <span>#{id}</span>
+                })()}
+              </div>
+              <div className="flex gap-2">
+                <button className="btn btn-ghost" onClick={() => useBuilderStore.getState().updateWidget(widgetId, (w) => { if (w.type === 'productSlider') { const arr = [ ...((w as any).selectedProductIds ?? []) ]; if (idx>0) { const t = arr[idx-1]; arr[idx-1] = arr[idx]; arr[idx] = t; } (w as any).selectedProductIds = arr; w.productIds = arr.map(String) } })}>מעלה</button>
+                <button className="btn btn-ghost" onClick={() => useBuilderStore.getState().updateWidget(widgetId, (w) => { if (w.type === 'productSlider') { const arr = [ ...((w as any).selectedProductIds ?? []) ]; if (idx<arr.length-1) { const t = arr[idx+1]; arr[idx+1] = arr[idx]; arr[idx] = t; } (w as any).selectedProductIds = arr; w.productIds = arr.map(String) } })}>מוריד</button>
+                <button className="btn btn-ghost" onClick={() => useBuilderStore.getState().updateWidget(widgetId, (w) => { if (w.type === 'productSlider') { const arr = [ ...((w as any).selectedProductIds ?? []) ]; arr.splice(idx,1); (w as any).selectedProductIds = arr; w.productIds = arr.map(String) } })}>הסר</button>
+              </div>
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
   )
 }
 
@@ -448,6 +511,35 @@ export function Inspector() {
                       </Field>
                     ))}
                   </div>
+                  {selectedWidget && selectedWidget.type === 'button' && (
+                    <div className="settings-group space-y-2">
+                      <div className="settings-title">יישור</div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          className={`h-8 w-8 border rounded flex items-center justify-center ${((selectedWidget as any).style?.textAlign ?? 'right') === 'right' ? 'bg-zinc-900 text-white' : 'bg-white'}`}
+                          title="ימין"
+                          onClick={() => updateWidget((selectedWidget as any).id, (w) => { if (w.type === 'button') w.style = { ...(w.style ?? {}), textAlign: 'right' } })}
+                        >
+                          <AlignRight size={16} />
+                        </button>
+                        <button
+                          className={`h-8 w-8 border rounded flex items-center justify-center ${((selectedWidget as any).style?.textAlign) === 'center' ? 'bg-zinc-900 text-white' : 'bg-white'}`}
+                          title="מרכז"
+                          onClick={() => updateWidget((selectedWidget as any).id, (w) => { if (w.type === 'button') w.style = { ...(w.style ?? {}), textAlign: 'center' } })}
+                        >
+                          <AlignCenter size={16} />
+                        </button>
+                        <button
+                          className={`h-8 w-8 border rounded flex items-center justify-center ${((selectedWidget as any).style?.textAlign) === 'left' ? 'bg-zinc-900 text-white' : 'bg-white'}`}
+                          title="שמאל"
+                          onClick={() => updateWidget((selectedWidget as any).id, (w) => { if (w.type === 'button') w.style = { ...(w.style ?? {}), textAlign: 'left' } })}
+                        >
+                          <AlignLeft size={16} />
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                  
                 </div>
               ))}
             </div>
@@ -615,18 +707,59 @@ export function Inspector() {
                     />
                   </Field>
                   <div className="grid grid-cols-2 gap-2">
-                    <Field label="רוחב">
+                    <Field label="רוחב" icon={<Frame size={14} /> }>
                       <Select value={(selectedWidget.style?.width === '100%' ? 'full' : 'auto')} onChange={(e) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'button') w.style = { ...(w.style ?? {}), width: e.target.value === 'full' ? '100%' : undefined } })}>
                         <option value="auto">רגיל</option>
                         <option value="full">רוחב מלא</option>
                       </Select>
                     </Field>
+                    <Field label="יישור" icon={<AlignRight size={14} /> }>
+                      <Select
+                        value={((selectedWidget.responsiveStyle?.[device]?.textAlign || selectedWidget.style?.textAlign) as any) || 'right'}
+                        onChange={(e) => updateWidget(selectedWidget.id, (w) => {
+                          if (w.type === 'button') {
+                            const next = e.target.value as any
+                            w.style = { ...(w.style ?? {}), textAlign: next }
+                          }
+                        })}
+                      >
+                        <option value="right">ימין</option>
+                        <option value="center">מרכז</option>
+                        <option value="left">שמאל</option>
+                      </Select>
+                    </Field>
+                    <Field label="סגנון" icon={<Square size={14} /> }>
+                       <Select
+                         value={selectedWidget.type === 'button' ? ((selectedWidget.variant ?? 'filled') as any) : 'filled'}
+                         onChange={(e) => updateWidget(selectedWidget.id, (w) => {
+                           if (w.type === 'button') {
+                             const next = e.target.value as any
+                             w.variant = next
+                             // אם עוברים מסגנון מלא לסגנון שאינו מלא והטקסט לבן – שנה לשחור כהה לנגישות
+                             const color = (w.style?.color ?? '').toString().toLowerCase().replace(/\s+/g,'')
+                             const isWhite = color === '#fff' || color === '#ffffff' || color === 'white' || color === 'rgb(255,255,255)' || color === 'rgba(255,255,255,1)'
+                             if (next !== 'filled' && (!w.style?.color || isWhite)) {
+                               w.style = { ...(w.style ?? {}), color: '#111111' }
+                             }
+                           }
+                         })}
+                       >
+                         <option value="filled">מלא</option>
+                         <option value="outline">מתאר</option>
+                         <option value="text">טקסט בלבד</option>
+                         <option value="underline">טקסט עם קו תחתון</option>
+                       </Select>
+                     </Field>
                   </div>
                   <div className="settings-group space-y-2">
                     <div className="settings-title">פדינג</div>
                     <div className="grid grid-cols-4 gap-2">
                       {(['top','right','bottom','left'] as const).map((side) => (
-                        <Field key={`btn-pad-${side}`} label={{ top: 'עליון', right: 'ימין', bottom: 'תחתון', left: 'שמאל' }[side]}>
+                        <Field
+                          key={`btn-pad-${side}`}
+                          label={{ top: 'עליון', right: 'ימין', bottom: 'תחתון', left: 'שמאל' }[side]}
+                          icon={{ top: <ArrowUp size={12} />, right: <ArrowRight size={12} />, bottom: <ArrowDown size={12} />, left: <ArrowLeft size={12} /> }[side]}
+                        >
                           <NumberInputUI
                             value={selectedWidget.style?.padding?.[side] ?? '' as any}
                             onChange={(e) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'button') w.style = { ...(w.style ?? {}), padding: { ...(w.style?.padding ?? {}), [side]: (e.target as HTMLInputElement).value === '' ? undefined : Number((e.target as HTMLInputElement).value) } } })}
@@ -635,10 +768,80 @@ export function Inspector() {
                       ))}
                     </div>
                   </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <Field label="עיגול פינות (px)" icon={<Circle size={14} /> }>
+                      <NumberInputUI
+                        value={(selectedWidget.style?.borderRadius ?? '' as any)}
+                        onChange={(e) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'button') w.style = { ...(w.style ?? {}), borderRadius: (e.target as HTMLInputElement).value === '' ? undefined : Number((e.target as HTMLInputElement).value) } })}
+                      />
+                    </Field>
+                  </div>
                 </div>
               ),
             },
           ]}
+        />
+      )}
+
+      {tab === 'general' && selectedWidget.type === 'newsletter' && (
+        <Accordion
+          items={[{
+            id: 'newsletter',
+            title: 'ניוזלטר',
+            defaultOpen: true,
+            children: (
+              <div className="space-y-2">
+                <Field label="כותרת" icon={<Type size={14} /> }>
+                  <TextInput value={(selectedWidget as any).title ?? ''} onChange={(e)=>updateWidget(selectedWidget.id,(w)=>{ if (w.type==='newsletter') (w as any).title = e.target.value })} />
+                </Field>
+                <Field label="תיאור" icon={<TypeIcon size={14} /> }>
+                  <TextInput value={(selectedWidget as any).description ?? ''} onChange={(e)=>updateWidget(selectedWidget.id,(w)=>{ if (w.type==='newsletter') (w as any).description = e.target.value })} />
+                </Field>
+                <div className="grid grid-cols-2 gap-2">
+                  <Field label="Placeholder לאימייל">
+                    <TextInput value={(selectedWidget as any).placeholder ?? ''} onChange={(e)=>updateWidget(selectedWidget.id,(w)=>{ if (w.type==='newsletter') (w as any).placeholder = e.target.value })} />
+                  </Field>
+                  <Field label="Label לשדה">
+                    <TextInput value={(selectedWidget as any).label ?? ''} onChange={(e)=>updateWidget(selectedWidget.id,(w)=>{ if (w.type==='newsletter') (w as any).label = e.target.value })} />
+                  </Field>
+                </div>
+                <div className="grid grid-cols-3 gap-3">
+                  <Checkbox label="שדה שם" checked={(selectedWidget as any).showName} onChange={(v)=>updateWidget(selectedWidget.id,(w)=>{ if (w.type==='newsletter') (w as any).showName = v })} />
+                  <Checkbox label="שדה טלפון" checked={(selectedWidget as any).showPhone} onChange={(v)=>updateWidget(selectedWidget.id,(w)=>{ if (w.type==='newsletter') (w as any).showPhone = v })} />
+                  <Checkbox label="צ׳קבוקס" checked={(selectedWidget as any).checkboxEnabled} onChange={(v)=>updateWidget(selectedWidget.id,(w)=>{ if (w.type==='newsletter') (w as any).checkboxEnabled = v })} />
+                </div>
+                <Field label="יישור טופס">
+                  <Select value={(selectedWidget as any).align ?? 'center'} onChange={(e)=>updateWidget(selectedWidget.id,(w)=>{ if (w.type==='newsletter') (w as any).align = e.target.value as any })}>
+                    <option value="right">ימין</option>
+                    <option value="center">מרכז</option>
+                    <option value="left">שמאל</option>
+                  </Select>
+                </Field>
+                <Field label="מלל צ׳קבוקס (HTML)">
+                  <TextInput value={(selectedWidget as any).checkboxLabelHtml ?? ''} onChange={(e)=>updateWidget(selectedWidget.id,(w)=>{ if (w.type==='newsletter') (w as any).checkboxLabelHtml = e.target.value })} />
+                </Field>
+                <div className="grid grid-cols-2 gap-2">
+                  <NumberInput label="Radius אינפוט (px)" value={(selectedWidget as any).inputRadius ?? 6} onChange={(v)=>updateWidget(selectedWidget.id,(w)=>{ if (w.type==='newsletter') (w as any).inputRadius = v })} />
+                  <NumberInput label="Radius כפתור (px)" value={(selectedWidget as any).buttonRadius ?? 6} onChange={(v)=>updateWidget(selectedWidget.id,(w)=>{ if (w.type==='newsletter') (w as any).buttonRadius = v })} />
+                </div>
+                <Field label="רוחב אינפוט">
+                  <Select value={(selectedWidget as any).inputWidth ?? '50%'} onChange={(e)=>updateWidget(selectedWidget.id,(w)=>{ if (w.type==='newsletter') (w as any).inputWidth = e.target.value as any })}>
+                    <option value="15%">15%</option>
+                    <option value="33%">33%</option>
+                    <option value="50%">50%</option>
+                    <option value="75%">75%</option>
+                    <option value="100%">100%</option>
+                  </Select>
+                </Field>
+                <Field label="תווית כפתור">
+                  <TextInput value={(selectedWidget as any).buttonLabel ?? ''} onChange={(e)=>updateWidget(selectedWidget.id,(w)=>{ if (w.type==='newsletter') (w as any).buttonLabel = e.target.value })} />
+                </Field>
+                <Field label="הודעת הצלחה">
+                  <TextInput value={(selectedWidget as any).successMessage ?? ''} onChange={(e)=>updateWidget(selectedWidget.id,(w)=>{ if (w.type==='newsletter') (w as any).successMessage = e.target.value })} />
+                </Field>
+              </div>
+            )
+          }]}
         />
       )}
 
@@ -668,6 +871,32 @@ export function Inspector() {
                         <option value="dotted">מנוקד</option>
                       </Select>
                     </Field>
+                  </div>
+                  <div className="settings-group space-y-2">
+                    <div className="settings-title">יישור</div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        className={`h-8 w-8 border rounded flex items-center justify-center ${(selectedWidget.style?.textAlign ?? 'right') === 'right' ? 'bg-zinc-900 text-white' : 'bg-white'}`}
+                        title="ימין"
+                        onClick={() => updateWidget(selectedWidget.id, (w) => { if (w.type === 'button') w.style = { ...(w.style ?? {}), textAlign: 'right' } })}
+                      >
+                        <AlignRight size={16} />
+                      </button>
+                      <button
+                        className={`h-8 w-8 border rounded flex items-center justify-center ${selectedWidget.style?.textAlign === 'center' ? 'bg-zinc-900 text-white' : 'bg-white'}`}
+                        title="מרכז"
+                        onClick={() => updateWidget(selectedWidget.id, (w) => { if (w.type === 'button') w.style = { ...(w.style ?? {}), textAlign: 'center' } })}
+                      >
+                        <AlignCenter size={16} />
+                      </button>
+                      <button
+                        className={`h-8 w-8 border rounded flex items-center justify-center ${selectedWidget.style?.textAlign === 'left' ? 'bg-zinc-900 text-white' : 'bg-white'}`}
+                        title="שמאל"
+                        onClick={() => updateWidget(selectedWidget.id, (w) => { if (w.type === 'button') w.style = { ...(w.style ?? {}), textAlign: 'left' } })}
+                      >
+                        <AlignLeft size={16} />
+                      </button>
+                    </div>
                   </div>
                   <Field label="צבע">
                     <ColorPicker
@@ -996,28 +1225,13 @@ export function Inspector() {
                     onChange={(e) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'productSlider') w.title = e.target.value || undefined })}
                   />
                 </Field>
-                <div className="grid grid-cols-3 gap-3">
+                <div className="space-y-3">
                   <Field label="פריסה בדסקטופ">
                     <NumberInputUI
                       value={selectedWidget.type === 'productSlider' ? (selectedWidget.slidesPerView?.desktop ?? 4) : 4}
                       onChange={(e) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'productSlider') w.slidesPerView = { ...(w.slidesPerView ?? {}), desktop: Number((e.target as HTMLInputElement).value || 0) } })}
                     />
                   </Field>
-                  <div className="grid grid-cols-3 gap-3">
-                    <Field label="קטגוריות (מופרד בפסיקים)">
-                      <TextInput
-                        placeholder="1,2,3"
-                        value={selectedWidget.type === 'productSlider' ? ((selectedWidget.categoryIds as any)?.join?.(',') ?? '') : ''}
-                        onChange={(e) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'productSlider') w.categoryIds = e.target.value.split(',').map(v=>v.trim()).filter(Boolean) as any })}
-                      />
-                    </Field>
-                    <Field label="Limit">
-                      <NumberInputUI
-                        value={selectedWidget.type === 'productSlider' ? (selectedWidget.limit ?? 12) as any : 12 as any}
-                        onChange={(e) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'productSlider') w.limit = Number((e.target as HTMLInputElement).value || 0) })}
-                      />
-                    </Field>
-                  </div>
                   <Field label="בטאבלט">
                     <NumberInputUI
                       value={selectedWidget.type === 'productSlider' ? (selectedWidget.slidesPerView?.tablet ?? 2) : 2}
@@ -1030,7 +1244,74 @@ export function Inspector() {
                       onChange={(e) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'productSlider') w.slidesPerView = { ...(w.slidesPerView ?? {}), mobile: Number((e.target as HTMLInputElement).value || 0) } })}
                     />
                   </Field>
+                  <Field label="Limit">
+                    <NumberInputUI
+                      value={selectedWidget.type === 'productSlider' ? (selectedWidget.limit ?? 12) as any : 12 as any}
+                      onChange={(e) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'productSlider') w.limit = Number((e.target as HTMLInputElement).value || 0) })}
+                    />
+                  </Field>
+                  <div className="settings-hr" />
+                  <Field label="קטגוריה">
+                    <Select
+                      value={selectedWidget.type === 'productSlider' ? String((selectedWidget as any).categoryId ?? '') : ''}
+                      onFocus={(e) => { /* lazy fetch categories */ (async () => {
+                        const slug = (window as any).__PREVIEW_BOOTSTRAP__?.storeSlug || (window as any).STORE_DATA?.slug
+                        if (!(window as any).__QS_CATEGORIES__ && slug) {
+                          try { const res = await fetch(`/api/stores/${slug}/categories`, { credentials: 'include' }); const data = await res.json(); (window as any).__QS_CATEGORIES__ = Array.isArray(data?.data) ? data.data : (Array.isArray(data) ? data : []); } catch {}
+                        }
+                        const el = e.currentTarget as HTMLSelectElement
+                        const cats = (window as any).__QS_CATEGORIES__ as any[] | undefined
+                        if (cats && el.children.length <= 1) {
+                          cats.forEach((c:any) => { const opt = document.createElement('option'); opt.value = String(c.id || c.slug || c.name); opt.textContent = c.name || String(c.slug || c.id); el.appendChild(opt) })
+                        }
+                      })() }}
+                      onChange={(e) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'productSlider') (w as any).categoryId = e.target.value || undefined })}
+                    >
+                      <option value="">— בחר קטגוריה —</option>
+                    </Select>
+                  </Field>
+                  <div className="settings-hr" />
+                  <div className="grid grid-cols-2 gap-2">
+                    <Field label="רשיו תמונה">
+                      <Select value={selectedWidget.type==='productSlider' ? String(((selectedWidget as any).imageRatio ?? '4/5')) : '4/5'} onChange={(e)=>updateWidget(selectedWidget.id, (w)=>{ if (w.type==='productSlider') (w as any).imageRatio = e.target.value })}>
+                        <option value="1/1">1:1</option>
+                        <option value="4/5">4:5</option>
+                        <option value="3/4">3:4</option>
+                        <option value="16/9">16:9</option>
+                      </Select>
+                    </Field>
+                    <Field label="מסגרת כרטיס">
+                      <Checkbox label="הצג" checked={selectedWidget.type==='productSlider' ? ((selectedWidget as any).cardOptions?.showCardBorder ?? false) : false} onChange={(v)=>updateWidget(selectedWidget.id, (w)=>{ if (w.type==='productSlider') (w as any).cardOptions = { ...((w as any).cardOptions ?? {}), showCardBorder: v } })} />
+                    </Field>
+                    <Field label="הצגת מחיר">
+                      <Checkbox label="הצג" checked={selectedWidget.type==='productSlider' ? ((selectedWidget as any).cardOptions?.showPrice ?? true) : true} onChange={(v)=>updateWidget(selectedWidget.id, (w)=>{ if (w.type==='productSlider') (w as any).cardOptions = { ...((w as any).cardOptions ?? {}), showPrice: v } })} />
+                    </Field>
+                    <Field label="הצגת מידות">
+                      <Checkbox label="הצג" checked={selectedWidget.type==='productSlider' ? ((selectedWidget as any).cardOptions?.showSizes ?? true) : true} onChange={(v)=>updateWidget(selectedWidget.id, (w)=>{ if (w.type==='productSlider') (w as any).cardOptions = { ...((w as any).cardOptions ?? {}), showSizes: v } })} />
+                    </Field>
+                    <Field label="יישור תוכן">
+                      <Select value={selectedWidget.type==='productSlider' ? (((selectedWidget as any).cardOptions?.contentAlign) ?? 'right') : 'right'} onChange={(e)=>updateWidget(selectedWidget.id, (w)=>{ if (w.type==='productSlider') (w as any).cardOptions = { ...((w as any).cardOptions ?? {}), contentAlign: e.target.value as any } })}>
+                        <option value="right">ימין</option>
+                        <option value="center">מרכז</option>
+                        <option value="left">שמאל</option>
+                      </Select>
+                    </Field>
+                    <Field label="הצגת מדבקות">
+                      <Checkbox label="הצג" checked={selectedWidget.type==='productSlider' ? ((selectedWidget as any).cardOptions?.showBadges ?? true) : true} onChange={(v)=>updateWidget(selectedWidget.id, (w)=>{ if (w.type==='productSlider') (w as any).cardOptions = { ...((w as any).cardOptions ?? {}), showBadges: v } })} />
+                    </Field>
+                    <Field label="הצגת צבעים">
+                      <Checkbox label="הצג" checked={selectedWidget.type==='productSlider' ? ((selectedWidget as any).cardOptions?.showColors ?? true) : true} onChange={(v)=>updateWidget(selectedWidget.id, (w)=>{ if (w.type==='productSlider') (w as any).cardOptions = { ...((w as any).cardOptions ?? {}), showColors: v } })} />
+                    </Field>
+                    <Field label="הוספה לעגלה">
+                      <Checkbox label="הצג" checked={selectedWidget.type==='productSlider' ? ((selectedWidget as any).cardOptions?.showQuickAdd ?? false) : false} onChange={(v)=>updateWidget(selectedWidget.id, (w)=>{ if (w.type==='productSlider') (w as any).cardOptions = { ...((w as any).cardOptions ?? {}), showQuickAdd: v } })} />
+                    </Field>
+                    <Field label="ווישליסט">
+                      <Checkbox label="הצג" checked={selectedWidget.type==='productSlider' ? ((selectedWidget as any).cardOptions?.showWishlist ?? false) : false} onChange={(v)=>updateWidget(selectedWidget.id, (w)=>{ if (w.type==='productSlider') (w as any).cardOptions = { ...((w as any).cardOptions ?? {}), showWishlist: v } })} />
+                    </Field>
+                  </div>
+                  
                 </div>
+                <div className="settings-hr" />
                 <div className="grid grid-cols-3 gap-3">
                   <Field label="חצים">
                     <Checkbox
@@ -1054,42 +1335,22 @@ export function Inspector() {
                     />
                   </Field>
                 </div>
+         
                 <div className="settings-hr" />
-                <div className="flex items-center justify-between">
-                  <div className="text-xs text-zinc-600">מוצרים (מוקאפים)</div>
-                  <button
-                    className="btn btn-ghost"
-                    onClick={() => updateWidget(selectedWidget.id, (w) => {
-                      if (w.type === 'productSlider') {
-                        const id = String(Date.now())
-                        const arr = [ ...(w.products ?? []) ]
-                        arr.push({ id, title: `מוצר #${(arr.length+1)}`, price: 99, image: `https://picsum.photos/seed/${id}/400/300` })
-                        w.products = arr as any
-                      }
-                    })}
-                  >הוסף מוצר</button>
-                </div>
-                <div className="space-y-2">
-                  {((selectedWidget.type === 'productSlider' ? (selectedWidget.products ?? []) : []) as any[]).map((p, idx) => (
-                    <div key={p.id ?? idx} className="border rounded p-2 flex items-start gap-2">
-                      <img src={p.image ?? 'https://picsum.photos/seed/mock/80/80'} className="w-16 h-16 object-cover rounded" />
-                      <div className="flex-1 space-y-2">
-                        <div className="grid grid-cols-2 gap-2">
-                          <TextInput placeholder="שם מוצר" value={p.title ?? ''} onChange={(e) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'productSlider') { const arr = [...(w.products ?? [])]; arr[idx] = { ...(arr[idx] ?? {}), title: e.target.value }; w.products = arr as any } })} />
-                          <NumberInputUI value={p.price ?? 0 as any} onChange={(e) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'productSlider') { const arr = [...(w.products ?? [])]; arr[idx] = { ...(arr[idx] ?? {}), price: Number((e.target as HTMLInputElement).value || 0) }; w.products = arr as any } })} />
-                        </div>
-                        <TextInput placeholder="תמונה (URL)" value={p.image ?? ''} onChange={(e) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'productSlider') { const arr = [...(w.products ?? [])]; arr[idx] = { ...(arr[idx] ?? {}), image: e.target.value || undefined }; w.products = arr as any } })} />
-                        <TextInput placeholder="קישור (לא חובה)" value={p.href ?? ''} onChange={(e) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'productSlider') { const arr = [...(w.products ?? [])]; arr[idx] = { ...(arr[idx] ?? {}), href: e.target.value || undefined }; w.products = arr as any } })} />
-                        <div className="flex flex-wrap gap-2">
-                          <button className="btn btn-ghost" onClick={() => updateWidget(selectedWidget.id, (w) => { if (w.type === 'productSlider') { const arr = [...(w.products ?? [])]; if (idx > 0) { const t = arr[idx-1]; arr[idx-1] = arr[idx]; arr[idx] = t; } w.products = arr as any } })}>מעלה</button>
-                          <button className="btn btn-ghost" onClick={() => updateWidget(selectedWidget.id, (w) => { if (w.type === 'productSlider') { const arr = [...(w.products ?? [])]; if (idx < arr.length-1) { const t = arr[idx+1]; arr[idx+1] = arr[idx]; arr[idx] = t; } w.products = arr as any } })}>מוריד</button>
-                          <button className="btn btn-ghost" onClick={() => updateWidget(selectedWidget.id, (w) => { if (w.type === 'productSlider') { const arr = [...(w.products ?? [])]; arr.splice(idx,0, { ...(arr[idx] ?? {}), id: String(Date.now()) }); w.products = arr as any } })}>שכפל</button>
-                          <button className="btn btn-ghost" onClick={() => updateWidget(selectedWidget.id, (w) => { if (w.type === 'productSlider') { const arr = [...(w.products ?? [])]; arr.splice(idx,1); w.products = arr as any } })}>מחק</button>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                <Field label="בחירה ידנית">
+                  <div className="flex items-center gap-2">
+                    <Checkbox
+                      label="בחר מוצרים ידנית"
+                      checked={selectedWidget.type === 'productSlider' ? !!(selectedWidget as any).manualSelection : false}
+                      onChange={(v) => updateWidget(selectedWidget.id, (w) => { if (w.type === 'productSlider') (w as any).manualSelection = v })}
+                    />
+                  </div>
+                </Field>
+                {selectedWidget.type === 'productSlider' && (selectedWidget as any).manualSelection && (
+                  <ManualProductsPicker widgetId={selectedWidget.id} selectedIds={(selectedWidget as any).selectedProductIds as any[] | undefined} />
+                )}
+     
+
               </div>
             )
           }]}

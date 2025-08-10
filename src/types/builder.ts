@@ -13,6 +13,7 @@ export type WidgetType =
   | 'banner'
   | 'marquee'
   | 'productSlider'
+  | 'newsletter'
   | 'html'
   | 'container'
 
@@ -143,7 +144,8 @@ export type ButtonWidget = WidgetCommon & {
   type: 'button'
   label: string
   href?: string
-  variant?: 'primary' | 'secondary' | 'ghost'
+  // סגנון ויזואלי של הכפתור: מלא, מתאר, טקסט בלבד או טקסט עם קו תחתון
+  variant?: 'filled' | 'outline' | 'text' | 'underline'
   icon?: 'none' | 'arrow-right' | 'arrow-left' | 'shopping-cart'
   hoverStyle?: StyleValues
 }
@@ -220,6 +222,9 @@ export type ProductSliderWidget = WidgetCommon & {
   products?: Array<{ id: string; title: string; price?: number; image?: string; href?: string }>
   categoryIds?: Array<number | string>
   limit?: number
+  manualSelection?: boolean
+  selectedProductIds?: Array<number | string>
+  selectedProductsMeta?: Array<{ id: number | string; name: string; image?: string }>
   slidesPerView?: Partial<Record<DeviceBreakpoint, number>>
   arrows?: boolean
   dots?: boolean
@@ -229,6 +234,24 @@ export type ProductSliderWidget = WidgetCommon & {
 export type HtmlWidget = WidgetCommon & {
   type: 'html'
   html: string
+}
+
+export type NewsletterWidget = WidgetCommon & {
+  type: 'newsletter'
+  title?: string
+  description?: string
+  placeholder?: string
+  label?: string
+  showName?: boolean
+  showPhone?: boolean
+  checkboxEnabled?: boolean
+  checkboxLabelHtml?: string
+  buttonLabel?: string
+  successMessage?: string
+  align?: 'left' | 'center' | 'right'
+  inputRadius?: number
+  buttonRadius?: number
+  inputWidth?: '15%' | '33%' | '50%' | '75%' | '100%'
 }
 
 export type ContainerWidget = WidgetCommon & {
@@ -257,6 +280,7 @@ export type Widget =
   | BannerWidget
   | MarqueeWidget
   | ProductSliderWidget
+  | NewsletterWidget
   | HtmlWidget
   | ContainerWidget
 

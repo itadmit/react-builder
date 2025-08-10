@@ -137,10 +137,12 @@ export function WidgetRenderer({ widget, sectionId, index, draggable = true }: {
   const { color: _c, textAlign: _ta, fontSize: _fs, fontWeight: _fw, lineHeight: _lh, letterSpacing: _ls, fontFamily: _ff, ...nonTypographyStyle } = (baseStyle as any)
   const wrapperStyle: React.CSSProperties =
     widget.type === 'image'
-      ? { ...nonTypographyStyle, borderRadius: undefined }
+      ? { ...nonTypographyStyle, borderRadius: undefined, borderColor: undefined, borderWidth: undefined, borderStyle: undefined }
       : widget.type === 'button'
         ? { ...nonTypographyStyle, background: undefined, borderRadius: undefined }
-        : { ...nonTypographyStyle }
+        : widget.type === 'divider'
+          ? { ...nonTypographyStyle, borderColor: undefined, borderWidth: undefined, borderStyle: undefined }
+          : { ...nonTypographyStyle }
   const contentTypographyStyle: React.CSSProperties = {
     color: effectiveHoverStyle.color,
     textAlign: effectiveHoverStyle.textAlign as any,
@@ -155,7 +157,7 @@ export function WidgetRenderer({ widget, sectionId, index, draggable = true }: {
     <div
       ref={setNodeRef as any}
       {...(attributes as any)}
-      className={`relative ${draggable ? 'group group/widget' : ''} rounded ${widget.type === 'banner' ? 'p-0' : 'p-3'} ${draggable ? 'border ' + ((hovered || isSelected) ? 'border-zinc-200' : 'border-transparent') : ''} ${isSelected && draggable ? 'ring-1 ring-[var(--qs-outline-strong)]' : ''}`}
+      className={`relative group group/widget rounded ${widget.type === 'banner' ? 'p-0' : 'p-3'} ${draggable ? 'border ' + ((hovered || isSelected) ? 'border-zinc-200' : 'border-transparent') : ''} ${isSelected && draggable ? 'ring-1 ring-[var(--qs-outline-strong)]' : ''}`}
       style={{ ...wrapperStyle, transform: CSS.Transform.toString(transform), transition }}
       data-qs-index={index}
       data-qs-section={sectionId}
@@ -258,14 +260,65 @@ export function WidgetRenderer({ widget, sectionId, index, draggable = true }: {
         ) })()
       )}
       {widget.type === 'button' && (
-        (() => { const w = widget as Extract<Widget, { type: 'button' }>; return <a
-          href={w.href ?? '#'}
-          className={`inline-flex items-center gap-2 justify-center rounded`}
-          style={styleToCss(effectiveHoverStyle)}
-        >
-          {iconEl}
-          <span>{w.label}</span>
-        </a> })()
+        (() => {
+          const w = widget as Extract<Widget, { type: 'button' }>
+          const variant = w.variant ?? 'filled'
+          // נבנה סגנון בסיס לפי וריאנט: מלא, מתאר, טקסט, קו תחתון
+          const variantStyle: React.CSSProperties = (() => {
+            const s = styleToCss(effectiveHoverStyle)
+            const normalize = (c?: string) => (c ?? '').toLowerCase().replace(/\s+/g, '')
+            const isWhite = (c?: string) => {
+              const n = normalize(c)
+              return n === '#fff' || n === '#ffffff' || n === 'white' || n === 'rgb(255,255,255)' || n === 'rgba(255,255,255,1)'
+            }
+            const computedTextColor = (w.variant ?? 'filled') === 'filled' ? (s.color as any) : (isWhite(s.color as any) || !s.color ? '#111111' : (s.color as any))
+            const basePadding = {
+              paddingTop: s.paddingTop ?? 8,
+              paddingBottom: s.paddingBottom ?? 8,
+              paddingLeft: s.paddingLeft ?? 12,
+              paddingRight: s.paddingRight ?? 12,
+            }
+            const radius = { borderRadius: s.borderRadius }
+            const width = s.width ? { width: s.width } : {}
+            const textColor = { color: computedTextColor }
+            const bg = s.background ? { background: s.background } : {}
+            const border = {
+              borderColor: s.borderColor ?? computedTextColor ?? '#111',
+              borderWidth: s.borderWidth ?? 1,
+              borderStyle: s.borderStyle ?? 'solid',
+            } as React.CSSProperties
+            if (variant === 'filled') {
+              return { ...basePadding, ...radius, ...width, ...bg, ...textColor }
+            }
+            if (variant === 'outline') {
+              return { ...basePadding, ...radius, ...width, background: 'transparent', ...textColor, ...border }
+            }
+            if (variant === 'underline') {
+              return { paddingTop: 0, paddingBottom: 0, paddingLeft: 0, paddingRight: 0, ...width, background: 'transparent', ...textColor, textDecoration: 'underline' }
+            }
+            // text
+            return { paddingTop: 0, paddingBottom: 0, paddingLeft: 0, paddingRight: 0, ...width, background: 'transparent', ...textColor }
+          })()
+          // מיפוי textAlign ל-justifyContent עבור פריסת flex של הכפתור
+          const justify = ((): React.CSSProperties['justifyContent'] => {
+            const ta = (effectiveHoverStyle.textAlign as any) || 'center'
+            if (ta === 'left') return 'flex-start'
+            if (ta === 'right') return 'flex-end'
+            return 'center'
+          })()
+          return (
+            <div style={{ textAlign: (effectiveHoverStyle.textAlign as any) || 'right' }}>
+              <a
+                href={w.href ?? '#'}
+                className={`inline-flex items-center gap-2`}
+                style={{ ...variantStyle, justifyContent: justify, display: 'inline-flex' }}
+              >
+                {iconEl}
+                <span>{w.label}</span>
+              </a>
+            </div>
+          )
+        })()
       )}
       {widget.type === 'divider' && (() => {
         const s = effectiveHoverStyle
@@ -502,6 +555,56 @@ export function WidgetRenderer({ widget, sectionId, index, draggable = true }: {
       {widget.type === 'html' && (
         <div dangerouslySetInnerHTML={{ __html: ((widget as Extract<Widget, { type: 'html' }>).html as string) }} />
       )}
+      {widget.type === 'newsletter' && (
+        (() => {
+          const w = widget as Extract<Widget, { type: 'newsletter' }>
+          const slug = (window as any).__PREVIEW_BOOTSTRAP__?.storeSlug || (window as any).STORE_DATA?.slug
+          const [email, setEmail] = useState('')
+          const [name, setName] = useState('')
+          const [phone, setPhone] = useState('')
+          const [consent, setConsent] = useState(true)
+          const [loading, setLoading] = useState(false)
+          const [done, setDone] = useState(false)
+          const [error, setError] = useState<string | null>(null)
+          const submit = async (e?: React.FormEvent) => {
+            e?.preventDefault()
+            setError(null)
+            // ולידציה בסיסית
+            const emailOk = /.+@.+\..+/.test(email)
+            if (!emailOk) { setError('נא להזין אימייל תקין'); return }
+            if (w.showPhone && phone && !/^\d{9,10}$/.test(phone)) { setError('נא להזין מספר טלפון תקין'); return }
+            setLoading(true)
+            try {
+              if (slug) {
+                const res = await fetch(`/api/stores/${slug}/newsletter`, { method: 'POST', headers: { 'Content-Type': 'application/json' }, credentials: 'include', body: JSON.stringify({ first_name: name || undefined, email, phone: phone || undefined, marketing_consent: consent ? 1 : 0 }) })
+                const data = await res.json()
+                if (!res.ok || data?.success === false) throw new Error(data?.message || 'שגיאה')
+              }
+              setDone(true)
+            } catch (err:any) {
+              setError(err?.message || 'שגיאה בשליחה')
+            } finally { setLoading(false) }
+          }
+          if (done) return <div className="p-4 rounded bg-zinc-50 text-center" style={contentTypographyStyle}>{w.successMessage || 'תודה! נרשמת בהצלחה.'}</div>
+          return (
+            <form className="space-y-3" onSubmit={submit} style={{ textAlign: (w.align || 'center') as any }}>
+              {w.title && <div className="font-semibold text-lg" style={{ ...contentTypographyStyle }}>{w.title}</div>}
+              {w.description && <div className="text-sm text-zinc-600" style={{ ...contentTypographyStyle }}>{w.description}</div>}
+              <div className="inline-flex items-stretch gap-0" style={{ width: (w.inputWidth ?? '50%') as any, maxWidth: '100%' }}>
+                <input type="email" className="h-11 border px-3 text-sm bg-white" style={{ flex: 1, minWidth: 0, borderTopLeftRadius: (document.dir === 'rtl' ? 0 : (w.inputRadius ?? 6)), borderBottomLeftRadius: (document.dir === 'rtl' ? 0 : (w.inputRadius ?? 6)), borderTopRightRadius: (document.dir === 'rtl' ? (w.inputRadius ?? 6) : 0), borderBottomRightRadius: (document.dir === 'rtl' ? (w.inputRadius ?? 6) : 0) }} placeholder={w.placeholder || 'כתובת דוא"ל'} value={email} onChange={(e)=>setEmail(e.target.value)} />
+                <button type="submit" className="h-11 px-5 text-sm text-white" style={{ background: '#111', borderTopRightRadius: (document.dir === 'rtl' ? 0 : (w.buttonRadius ?? 6)), borderBottomRightRadius: (document.dir === 'rtl' ? 0 : (w.buttonRadius ?? 6)), borderTopLeftRadius: (document.dir === 'rtl' ? (w.buttonRadius ?? 6) : 0), borderBottomLeftRadius: (document.dir === 'rtl' ? (w.buttonRadius ?? 6) : 0) }} disabled={loading}>{loading ? 'נרשם…' : (w.buttonLabel || 'SEND')}</button>
+              </div>
+              {w.checkboxEnabled && (
+                <label className="text-xs text-zinc-600 inline-flex items-center gap-3" style={{ display: 'block', marginTop: 8}}>
+                  <input type="checkbox" checked={consent} onChange={(e)=>setConsent(e.target.checked)} style={{ transform: 'translateY(1px)', marginLeft: 5 }} />
+                  <span dangerouslySetInnerHTML={{ __html: w.checkboxLabelHtml || 'אני מאשר/ת קבלת דיוור' }} />
+                </label>
+              )}
+              {error && <div className="text-xs text-red-600">{error}</div>}
+            </form>
+          )
+        })()
+      )}
     </div>
   )
 }
@@ -509,13 +612,29 @@ export function WidgetRenderer({ widget, sectionId, index, draggable = true }: {
 function ProductSliderView({ widget, device }: { widget: Extract<Widget, { type: 'productSlider' }>; device: 'desktop' | 'tablet' | 'mobile' }) {
   const containerRef = useRef<HTMLDivElement | null>(null)
   const [items, setItems] = useState<any[] | null>(widget.products ?? null)
+  const [wishlist, setWishlist] = useState<Set<string>>(() => new Set<string>())
   const slug = (window as any).__PREVIEW_BOOTSTRAP__?.storeSlug || (window as any).STORE_DATA?.slug
-  const useApi = !!slug && (!!widget.categoryIds?.length || !!widget.productIds?.length)
+  const useApi = !!slug && (!!(widget as any).categoryId || !!widget.categoryIds?.length || !!widget.productIds?.length)
+  // טעינת Wishlist התחלתית
+  useEffect(() => {
+    if (!slug) return
+    fetch(`/api/stores/${slug}/wishlist`, { credentials: 'include' })
+      .then(r => r.ok ? r.json() : null)
+      .then((data) => {
+        const ids: any[] = (data?.items ?? data ?? []) as any[]
+        if (Array.isArray(ids)) {
+          setWishlist(new Set(ids.map((x: any) => String(x))))
+        }
+      })
+      .catch(() => {})
+  }, [slug])
   useEffect(() => {
     if (!useApi) return
     const limit = widget.limit ?? 12
     const qs: string[] = [`limit=${limit}`]
-    if (widget.categoryIds && widget.categoryIds.length) qs.push(`category_id=${(widget.categoryIds as any).join(',')}`)
+    const singleCat:any = (widget as any).categoryId
+    if (singleCat) qs.push(`category_id=${singleCat}`)
+    else if (widget.categoryIds && widget.categoryIds.length) qs.push(`category_id=${(widget.categoryIds as any).join(',')}`)
     // אופציונלי: אם ירצו ids ספציפיים
     if (widget.productIds && widget.productIds.length) qs.push(`ids=${widget.productIds.join(',')}`)
     const url = `/api/stores/${slug}/products?` + qs.join('&')
@@ -528,13 +647,54 @@ function ProductSliderView({ widget, device }: { widget: Extract<Widget, { type:
       })
       .catch(() => setItems([]))
   }, [slug, useApi, JSON.stringify(widget.categoryIds), JSON.stringify(widget.productIds), widget.limit])
-  const slides = (items && items.length
-    ? items.map((p:any) => String(p.id))
+  // בונה דמו מפורט אם אין נתונים מה-API
+  function buildMockProducts(count: number): any[] {
+    const palette = ['#111', '#2563eb', '#10b981', '#ef4444', '#7c3aed', '#f59e0b', '#0ea5e9']
+    const sizeOptions = ['XS','S','M','L','XL']
+    return Array.from({ length: count }).map((_, i) => {
+      const id = `mock-${i+1}`
+      const colorCodes = [palette[i % palette.length], palette[(i+2) % palette.length], palette[(i+4) % palette.length]]
+      const variants = colorCodes.map((c, idx) => ({ id: `${id}-v${idx+1}`, sku: `${id}-sku${idx+1}`, regular_price: 129 + (idx*10), sale_price: idx % 2 === 0 ? 99 + (idx*10) : undefined, inventory_quantity: 10, options: { Color: `C${idx+1}` }, display_type: 'color', color_code: c }))
+      return {
+        id,
+        name: `מוצר #${i+1}`,
+        slug: `product-${i+1}`,
+        type: 'variable',
+        regular_price: 129,
+        sale_price: 0,
+        images: [`https://picsum.photos/seed/qs-${i+1}/800/1000`],
+        variants,
+        options: [
+          { name: 'צבע', display_type: 'color', values: colorCodes.map(c => ({ color_code: c })) },
+          { name: 'מידה', display_type: 'button', values: sizeOptions.map(v => ({ value: v })) },
+        ],
+        product_url: '#',
+        badge_text: i % 3 === 0 ? 'SALE' : (i % 5 === 0 ? 'TOP' : undefined),
+        badge_color: i % 3 === 0 ? '#ef4444' : (i % 5 === 0 ? '#111111' : undefined),
+        is_new: i % 4 === 0,
+      }
+    })
+  }
+
+  const displayItems = (items && items.length
+    ? items
+    : buildMockProducts(Math.max(4, widget.limit ?? 8)))
+
+  const slides = (displayItems && displayItems.length
+    ? displayItems.map((p:any) => String(p.id))
     : (widget.products && widget.products.length
       ? widget.products.map((p) => p.id)
       : (widget.productIds && widget.productIds.length ? widget.productIds : ['1', '2', '3', '4', '5']))) as string[]
-  const perView = widget.slidesPerView?.[device] ?? 4
-  const pageCount = Math.max(1, Math.ceil(slides.length / perView))
+  const basePerView = (() => {
+    const raw = widget.slidesPerView?.[device]
+    if (raw === undefined || raw === null) return device === 'desktop' ? 4 : device === 'tablet' ? 2 : 1
+    const n = Number(raw)
+    return Number.isFinite(n) && n > 0 ? n : (device === 'desktop' ? 4 : device === 'tablet' ? 2 : 1)
+  })()
+  const peekExtra = device === 'mobile' ? 0.15 : 0 // מציגים “עוד קצת” במובייל
+  const visibleCount = basePerView + peekExtra
+  const cardBasisPercent = 100 / visibleCount
+  const pageCount = Math.max(1, Math.ceil(slides.length / Math.ceil(basePerView)))
   const [page, setPage] = useState(0)
 
   useEffect(() => {
@@ -552,36 +712,169 @@ function ProductSliderView({ widget, device }: { widget: Extract<Widget, { type:
     el.scrollTo({ left: page * width, behavior: 'smooth' })
   }, [page])
 
+  const ratio = (widget as any).imageRatio || '4/5'
+  const card = (widget as any).cardOptions || {}
+  // Wishlist toggle
+  async function toggleWishlist(productId: string | number) {
+    if (!slug) {
+      // מצב ללא API – טוגל מקומי
+      setWishlist(prev => {
+        const s = new Set(prev); const id = String(productId); if (s.has(id)) s.delete(id); else s.add(id); return s
+      })
+      return
+    }
+    try {
+      const res = await fetch(`/api/stores/${slug}/wishlist`, { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ product_id: productId }) })
+      const data = await res.json()
+      const itemsIds = (data?.items ?? []) as any[]
+      setWishlist(new Set(itemsIds.map((x: any) => String(x))))
+    } catch {}
+  }
+  // Quick add to cart (פשוט)
+  async function quickAdd(item: any) {
+    if (!slug) return
+    try {
+      const payload: any = { product_id: item.id, quantity: 1 }
+      if (item.type === 'variable') {
+        // אם יש וריאציה יחידה – נשלח אותה; אחרת נבקש מהמשתמש לבחור (פשטני)
+        if (Array.isArray(item.variants) && item.variants.length === 1) {
+          payload.variation_id = item.variants[0].id
+        } else {
+          alert('למוצר יש וריאציות – יש לבחור בדף המוצר')
+          return
+        }
+      }
+      await fetch(`/api/stores/${slug}/cart`, { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+      // ניתן להוסיף Toast/רענון מונה עגלה כאן
+    } catch {}
+  }
   return (
     <div>
       <div className="font-semibold mb-2">{widget.title ?? 'סליידר מוצרים'}</div>
       <div className="relative">
-        <div className="overflow-x-auto scroll-smooth snap-x snap-mandatory" ref={containerRef}>
-          <div className="flex" style={{ width: `${(slides.length / perView) * 100}%` }}>
+        <div className="overflow-x-auto scroll-smooth snap-x snap-proximity" ref={containerRef} style={{ WebkitOverflowScrolling: 'touch', overscrollBehaviorX: 'contain' as any }}>
+          <div className="flex flex-nowrap -mx-2 px-2">
             {slides.map((id, idx) => {
               const mock = (widget.products ?? []).find((p) => String(p.id) === String(id))
-              const apiItem = (items ?? []).find((p:any) => String(p.id) === String(id))
+              const apiItem = (displayItems ?? []).find((p:any) => String(p.id) === String(id))
               const title = apiItem?.name ?? mock?.title ?? `מוצר #${id}`
               const href = apiItem?.product_url ?? mock?.href ?? '#'
-              const image = (apiItem?.images?.[0]) ?? mock?.image ?? `https://picsum.photos/seed/${id}/400/300`
-              const price = (() => {
+              const image = (apiItem?.images?.[0]) ?? mock?.image ?? `https://picsum.photos/seed/${id}/800/800`
+              // מחיר: חישוב מינימום לפי וריאציות או שדות מוצר
+              const priceMeta = (() => {
                 const p:any = apiItem
-                if (!p) return mock?.price
+                if (!p) return { reg: mock?.price, sale: undefined }
                 if (p.type === 'variable' && Array.isArray(p.variants) && p.variants.length) {
-                  const min = Math.min(...p.variants.map((v:any) => Number(v.sale_price ?? v.regular_price ?? Infinity)))
-                  return Number.isFinite(min) ? min : undefined
+                  const regMin = Math.min(...p.variants.map((v:any) => Number(v.regular_price ?? Infinity)))
+                  const saleMin = Math.min(...p.variants.map((v:any) => Number(v.sale_price ?? Infinity)))
+                  return {
+                    reg: Number.isFinite(regMin) ? regMin : undefined,
+                    sale: Number.isFinite(saleMin) ? saleMin : undefined,
+                  }
                 }
-                return Number(p.sale_price ?? p.regular_price ?? NaN)
+                return { reg: Number(p.regular_price ?? NaN), sale: Number.isFinite(Number(p.sale_price)) ? Number(p.sale_price) : undefined }
               })()
+              const isSale = (priceMeta.sale ?? Infinity) < (priceMeta.reg ?? Infinity)
+              // סוואצ'ים: לפי options.display_type==='color' או לפי variants[].color_code
+              const allColors: string[] = (() => {
+                const p:any = apiItem
+                const set = new Set<string>()
+                if (p?.options) {
+                  const colorOpt = (p.options as any[]).find(o => (o.display_type === 'color'))
+                  colorOpt?.values?.forEach((v:any) => { if (v?.color_code) set.add(v.color_code) })
+                }
+                if (p?.variants) {
+                  (p.variants as any[]).forEach(v => { if (v?.color_code) set.add(v.color_code) })
+                }
+                return Array.from(set).slice(0, 6)
+              })()
+              const maxShowColors = 5
+              const colorSwatches = allColors.slice(0, maxShowColors)
+              const moreColors = allColors.length - colorSwatches.length
+              // אופציות טקסטואליות (למשל מידות)
+              const textOptions: string[] = (() => {
+                const p:any = apiItem
+                const res:string[] = []
+                if (p?.options) {
+                  (p.options as any[]).forEach(o => {
+                    if (o?.display_type === 'button') {
+                      (o.values ?? []).slice(0,6).forEach((v:any) => res.push(String(v?.value ?? v?.name ?? '')))
+                    }
+                  })
+                }
+                return res.slice(0, 8)
+              })()
+              const isRTL = typeof document !== 'undefined' && (document.dir === 'rtl' || document.documentElement.dir === 'rtl')
+              const justifyCss = (align: 'left' | 'center' | 'right' | undefined) => {
+                if (align === 'center') return 'center'
+                if (align === 'left') return isRTL ? 'flex-end' : 'flex-start'
+                return isRTL ? 'flex-start' : 'flex-end'
+              }
               return (
-                <div key={id} className="shrink-0 snap-start px-2" style={{ width: `${100 / perView}%` }}>
-                  <a href={href} className="block border rounded p-3">
-                    <div className="aspect-video bg-zinc-100 rounded mb-2 overflow-hidden">
-                      {image ? <img src={image} className="w-full h-full object-cover" /> : <div className="w-full h-full bg-zinc-200 animate-pulse" />}
+                <div key={id} className="shrink-0 snap-start px-2" style={{ flex: `0 0 ${cardBasisPercent}%`, minWidth: `${cardBasisPercent}%` }}>
+                  {(() => { const cardBorder = (card.showCardBorder === true) ? 'border' : ''; return (
+                  <a href={href} className={`block ${cardBorder} rounded overflow-hidden`}>
+                    <div className="relative bg-zinc-100 overflow-hidden" style={{ aspectRatio: ratio.replace('/', ' / ') }}>
+                      {image ? <img src={image} loading="lazy" className="w-full h-full object-cover" /> : <div className="w-full h-full bg-zinc-200 animate-pulse" />}
+                      {/* באדג'ים */}
+                      {card.showBadges !== false && isSale && <span className="absolute top-2 right-2 text-[10px] font-bold bg-red-500 text-white rounded px-2 py-0.5">SALE</span>}
+                      {card.showBadges !== false && !!apiItem?.badge_text && <span className="absolute top-2 left-2 text-[10px] font-bold text-white rounded px-2 py-0.5" style={{ background: apiItem?.badge_color || '#111' }}>{apiItem.badge_text}</span>}
+                      {card.showBadges !== false && !!apiItem?.is_new && <span className="absolute top-10 right-2 text-[10px] font-bold bg-black/80 text-white rounded px-2 py-0.5">NEW</span>}
+                      {card.showWishlist && (
+                        <button
+                          type="button"
+                          className="absolute top-2 left-2 w-7 h-7 bg-white/90 hover:bg-white rounded-full flex items-center justify-center text-zinc-700"
+                          onClick={(e) => { e.preventDefault(); toggleWishlist(id) }}
+                        >
+                          <span className="text-xs">{wishlist.has(String(id)) ? '♥' : '♡'}</span>
+                        </button>
+                      )}
+                      {card.showQuickAdd && (
+                        <button
+                          type="button"
+                          className="absolute bottom-2 left-2 rtl:left-auto rtl:right-2 w-7 h-7 bg-white hover:bg-zinc-100 text-zinc-700 rounded-full flex items-center justify-center shadow border border-zinc-200 opacity-100 md:opacity-0 md:group-hover:opacity-100 transition"
+                          onClick={(e) => { e.preventDefault(); quickAdd(apiItem) }}
+                        >
+                          <ShoppingCart size={12} />
+                        </button>
+                      )}
                     </div>
-                    <div className="text-sm font-medium line-clamp-2">{title}</div>
-                    {price !== undefined && Number.isFinite(price as any) && <div className="text-xs text-zinc-600 mt-1">₪{price}</div>}
+                    <div className={`p-3 ${card.contentAlign === 'left' ? 'text-left' : card.contentAlign === 'center' ? 'text-center' : 'text-right'}`} style={{ textAlign: (card.contentAlign === 'left' ? 'left' : card.contentAlign === 'center' ? 'center' : 'right') }}>
+                      <div className="text-sm font-medium truncate mb-1">{title}</div>
+                      {/* מחיר */}
+                      {card.showPrice !== false && (() => {
+                        const reg = priceMeta.reg
+                        const sale = isSale ? priceMeta.sale : undefined
+                        return (
+                          <div className={`text-xs flex items-baseline gap-2 w-full`} style={{ justifyContent: justifyCss(card.contentAlign) }}>
+                            {sale !== undefined && Number.isFinite(sale as any) && <span className="font-semibold">₪{sale}</span>}
+                            {reg !== undefined && Number.isFinite(reg as any) && (
+                              <span className={sale !== undefined ? 'text-zinc-400 line-through' : ''}>₪{reg}</span>
+                            )}
+                          </div>
+                        )
+                      })()}
+                      {/* סוואצ'ים/אופציות */}
+                      {card.showColors !== false && colorSwatches.length > 0 && (
+                        <div className={`flex gap-1 mt-2 w-full`} style={{ justifyContent: justifyCss(card.contentAlign) }}>
+                          {colorSwatches.map((c, i) => (
+                            <span key={i} className="inline-block w-3.5 h-3.5 rounded border" style={{ background: c }} />
+                          ))}
+                          {moreColors > 0 && (
+                            <span className="inline-flex w-3.5 h-3.5 rounded border text-[9px] items-center justify-center bg-zinc-100 text-zinc-600">+{moreColors}</span>
+                          )}
+                        </div>
+                      )}
+                      {card.showSizes && textOptions.length > 0 && (
+                        <div className={`flex gap-1 mt-2 flex-wrap w-full`} style={{ justifyContent: justifyCss(card.contentAlign) }}>
+                          {textOptions.map((t, i) => (
+                            <span key={i} className="text-[10px] border rounded px-1.5 py-0.5 text-zinc-600">{t}</span>
+                          ))}
+                        </div>
+                      )}
+                    </div>
                   </a>
+                  ) })()}
                 </div>
               )
             })}

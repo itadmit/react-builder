@@ -22,6 +22,7 @@ type BuilderActions = {
   setDevice: (d: BuilderState['device']) => void
   setZoom: (z: number) => void
   select: (target?: SelectedTarget) => void
+  getWidgetById: (widgetId: string) => Widget | undefined
   setBootstrap: (data: { storeSlug?: string; components?: Section[]; etag?: string; updatedAt?: string; isPublished?: boolean }) => void
   setServerMeta: (meta: { etag?: string; updatedAt?: string; isPublished?: boolean }) => void
   clearPage: () => void
@@ -86,6 +87,25 @@ export const useBuilderStore = create<BuilderState & BuilderActions>()(
     setDevice: (d) => set({ device: d }, false, 'setDevice'),
     setZoom: (z) => set({ zoom: Math.max(0.5, Math.min(2, z)) }, false, 'setZoom'),
     select: (target) => set({ selected: target }, false, 'select'),
+    getWidgetById: (widgetId) => {
+      const state = get()
+      // חיפוש ברמה העליונה
+      for (const section of state.page.sections) {
+        const w = section.widgets.find((w) => w.id === widgetId)
+        if (w) return w
+        // חיפוש בתוך עמודות של קונטיינר
+        for (const cw of section.widgets) {
+          if (cw.type === 'container' && (cw as any).columnsChildren) {
+            const cols = (cw as any).columnsChildren as any[]
+            for (const col of cols) {
+              const found = col.find((child: Widget) => child.id === widgetId)
+              if (found) return found
+            }
+          }
+        }
+      }
+      return undefined
+    },
     setBootstrap: (data) => set(
       produce<BuilderState>((draft) => {
         if (data.storeSlug !== undefined) draft.storeSlug = data.storeSlug

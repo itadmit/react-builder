@@ -1,6 +1,6 @@
 import { useBuilderStore } from '@/store/useBuilderStore'
 import { WidgetRenderer } from './WidgetRenderer'
-import { DndContext, DragEndEvent } from '@dnd-kit/core'
+import { DndContext, DragEndEvent, DragStartEvent, DragOverEvent } from '@dnd-kit/core'
 import { SortableContext, verticalListSortingStrategy, useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
 import { useMemo, useState } from 'react'
@@ -20,10 +20,18 @@ export function Canvas() {
   const zoom = useBuilderStore((s) => s.zoom)
 
   const [dragIndicator, setDragIndicator] = useState<{ sectionId: string; afterIndex: number } | null>(null)
+  // אין overlay – משתמשים בקווי חיווי בתוך המשטח
+
+  const onDragStart = (event: DragStartEvent) => {
+    const { active } = event
+    const activeId = String(active.id)
+    // לא מציגים את הווידג'ט תוך כדי גרירה – רק קו חיווי סגול יוצג במיקום היעד
+  }
 
   const onDragEnd = (event: DragEndEvent) => {
     const { active, over } = event
     setDragIndicator(null)
+    
     if (!over) return
     const activeId = String(active.id)
     const overId = String(over.id)
@@ -41,6 +49,23 @@ export function Canvas() {
     let toIndex = Number(toIndexStr)
     if (!widgetId || Number.isNaN(toIndex)) return
     if (fromSectionId && toSectionId) moveWidget(widgetId, toSectionId, toIndex)
+  }
+
+  const onDragOverDnd = (event: DragOverEvent) => {
+    const { active, over } = event
+    if (!over) return
+    const activeId = String(active.id)
+    const overId = String(over.id)
+    // חיווי מגנטי לרה-סידור ווידג'טים
+    const partsA = activeId.split(':')
+    const partsB = overId.split(':')
+    if (partsA.length >= 3 && partsB.length >= 3) {
+      const overSectionId = partsB[0]
+      const overIndex = Number(partsB[2])
+      if (!Number.isNaN(overIndex)) {
+        setDragIndicator({ sectionId: overSectionId, afterIndex: overIndex - 1 })
+      }
+    }
   }
 
   function mergeStyles(base?: StyleValues, override?: StyleValues): StyleValues {
@@ -142,7 +167,7 @@ export function Canvas() {
             <div>גררו ווידג'טים לכאן או הוסיפו מהצד</div>
           </div>
         ) : (
-        <DndContext onDragEnd={onDragEnd}>
+        <DndContext onDragStart={onDragStart} onDragOver={onDragOverDnd} onDragEnd={onDragEnd}>
           <SortableContext items={page.sections.map((s) => `section:${s.id}`)} strategy={verticalListSortingStrategy}>
             {page.sections.filter((s) => !(s.advanced?.hiddenOn?.[device])).map((section) => (
               <SectionItem
@@ -160,6 +185,7 @@ export function Canvas() {
               />
             ))}
           </SortableContext>
+          {/* ללא DragOverlay – הקו מוצג בתוך סדרת הפריטים */}
         </DndContext>
         )}
           </div>
