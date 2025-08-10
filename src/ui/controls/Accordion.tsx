@@ -22,9 +22,9 @@ export function Accordion({ items }: { items: Item[] }) {
   }
 
   return (
-    <div className="divide-y rounded-lg border bg-white overflow-hidden">
+    <div className="divide-y rounded-lg border bg-white overflow-visible">
       {items.map((i) => (
-        <div key={i.id} className="">
+        <div key={i.id} className="relative">
           <button
             className="w-full flex items-center justify-between px-3 py-3 text-sm hover:bg-zinc-50"
             onClick={() => toggle(i.id)}
@@ -42,7 +42,7 @@ export function Accordion({ items }: { items: Item[] }) {
               )}
             </span>
           </button>
-          {openIds.has(i.id) && <div className="p-3">{i.children}</div>}
+          {openIds.has(i.id) && <div className="p-3 relative z-0">{i.children}</div>}
         </div>
       ))}
     </div>

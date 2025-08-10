@@ -55,6 +55,7 @@ body {
 
 .gradient-topbar { background: transparent; }
 .color-field.open .color-popover { display: block; z-index: 9999; }
+.color-popover { min-width: 200px; }
 
 /* Panels and settings grouping */
 .panel { @apply bg-zinc-50 dark:bg-zinc-950 h-full shadow-inner; }

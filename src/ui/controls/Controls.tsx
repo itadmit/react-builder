@@ -66,6 +66,7 @@ function hexToRgbaString(hex: string): string {
 
 export function ColorPicker({ value, onChange }: { value?: string; onChange: (v?: string) => void }) {
   const [open, setOpen] = useState(false)
+  const [openAbove, setOpenAbove] = useState(false)
   const ref = useRef<HTMLDivElement>(null)
   useEffect(() => {
     function onDocClick(e: MouseEvent) {
@@ -105,8 +106,23 @@ export function ColorPicker({ value, onChange }: { value?: string; onChange: (v?
   return (
     <div className="flex items-center gap-2">
       <div ref={ref} className={`relative color-field ${open ? 'open' : ''}`}>
-        <button type="button" className="h-9 w-9 rounded-md border cursor-pointer" style={swatchBg} onClick={() => setOpen((v) => !v)} />
-        <div className="color-popover absolute z-50 mt-2 p-2 bg-white border rounded shadow-md hidden">
+        <button type="button" className="h-9 w-9 rounded-md border cursor-pointer" style={swatchBg} onClick={() => {
+          if (!open && ref.current) {
+            // בדיקה אם יש מקום מתחת או צריך לפתוח מעל
+            const rect = ref.current.getBoundingClientRect()
+            const spaceBelow = window.innerHeight - rect.bottom
+            const spaceAbove = rect.top
+            const popoverHeight = 300 // גובה משוער של הקולור פיקר
+            
+            if (spaceBelow < popoverHeight && spaceAbove > popoverHeight) {
+              setOpenAbove(true)
+            } else {
+              setOpenAbove(false)
+            }
+          }
+          setOpen((v) => !v)
+        }} />
+        <div className={`color-popover absolute z-50 p-2 bg-white border rounded shadow-md hidden ${openAbove ? 'bottom-full mb-2' : 'top-full mt-2'}`}>
           <div className="mb-2 flex items-center justify-between">
             <span className="text-[11px] text-zinc-600">כולל שקיפות</span>
             <button className="text-[11px] underline" onClick={() => onChange('rgba(0,0,0,0)')}>שקוף</button>
